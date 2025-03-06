@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/itemContact"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="0dp"
+    android:paddingHorizontal="25dp"
+    android:paddingVertical="0dp">
+
+    <ImageView
+        android:id="@+id/imageViewAvatar"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="15dp"
+        android:src="@drawable/baseline_account_circle_24" />
+
+    <TextView
+        android:id="@+id/textViewFullName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="12dp"
+        android:layout_toEndOf="@id/imageViewAvatar"
+        android:fontFamily="sans-serif-light"
+        android:text="Full Name"
+        android:textColor="@color/black"
+        android:textSize="17sp" />
+
+    <RelativeLayout
+        android:id="@+id/relativeLayoutOpeningPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/textViewFullName"
+        android:layout_toEndOf="@id/imageViewAvatar"
+        android:layout_marginBottom="15dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/textViewPhone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif"
+            android:text="0909090909"
+            android:textColor="@color/black"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/imageViewCall"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_below="@id/textViewPhone"
+            android:background="@drawable/circle"
+            android:layout_marginTop="15dp"
+            android:padding="6dp"
+            android:src="@drawable/baseline_call_24" />
+
+        <ImageView
+            android:id="@+id/imageViewMessage"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_below="@id/textViewPhone"
+            android:layout_toEndOf="@id/imageViewCall"
+            android:background="@drawable/circle"
+            android:layout_marginTop="15dp"
+            android:layout_marginStart="20dp"
+            android:padding="6dp"
+            android:src="@drawable/baseline_chat_24" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/contactItemDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/relativeLayoutOpeningPanel"
+        android:layout_toEndOf="@id/imageViewAvatar"
+        android:background="@color/gray"
+        android:orientation="horizontal" />
+
+</RelativeLayout>
