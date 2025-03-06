@@ -1,5 +1,6 @@
 package hcmute.edu.vn.noicamheo;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.animation.Animation;
@@ -13,6 +14,8 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import hcmute.edu.vn.noicamheo.mediaplayer.MediaPlayerActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,5 +58,11 @@ public class MainActivity extends AppCompatActivity {
             }
             isExpanded = !isExpanded;
         });
+    }
+
+    public void switchToMediaPlayer(View view) {
+        Intent intent = new Intent(this, MediaPlayerActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
     }
 }
