@@ -17,7 +17,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import hcmute.edu.vn.noicamheo.mediaplayer.MediaPlayerActivity;
 
-public class MainActivity extends AppCompatActivity {
+public class MenuActivity extends AppCompatActivity {
 
     private FloatingActionButton fabMain, btnOption1, btnOption2;
     private boolean isExpanded = false;

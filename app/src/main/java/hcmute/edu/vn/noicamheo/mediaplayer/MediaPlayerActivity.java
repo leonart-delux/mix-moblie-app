@@ -2,7 +2,6 @@ package hcmute.edu.vn.noicamheo.mediaplayer;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.SearchView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -10,7 +9,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import hcmute.edu.vn.noicamheo.MainActivity;
+import hcmute.edu.vn.noicamheo.MenuActivity;
 import hcmute.edu.vn.noicamheo.R;
 
 public class MediaPlayerActivity extends AppCompatActivity {
@@ -31,7 +30,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(this, MenuActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         startActivity(intent);
     }
