@@ -16,7 +16,7 @@
         android:layout_marginTop="12dp"
         android:layout_marginBottom="10dp"
         android:queryHint="..."
-        android:background="@drawable/contact_search_view_bg"
+        android:background="@drawable/bg_contact_search_view"
         android:iconifiedByDefault="false"/>
 
 
