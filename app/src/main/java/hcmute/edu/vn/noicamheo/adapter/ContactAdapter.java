@@ -1,6 +1,5 @@
 package hcmute.edu.vn.noicamheo.adapter;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,47 +14,72 @@ import java.util.List;
 import hcmute.edu.vn.noicamheo.R;
 import hcmute.edu.vn.noicamheo.entity.Contact;
 
-public class ContactAdapter extends RecyclerView.Adapter<ContactViewHolder> {
+public class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     Context context;
-    List<Contact> contacts;
+    List<Object> contacts;
 
-    // Save the previous position of opening item (contact that displaying phone number_
+    // 2 vars below are used to distinguish between header (A, B, ...) and contact in a contact list
+    private static final int TYPE_ITEM = 1;
+    private static final int TYPE_HEADER = 0;
+
+    // Save the previous position of opening item (contact that displaying phone number
     int previousOpenItemPosition = -1;
 
-    public ContactAdapter(Context context, List<Contact> contacts) {
+    public ContactAdapter(Context context, List<Object> contacts) {
         this.context = context;
         this.contacts = contacts;
     }
 
+    @Override
+    public int getItemViewType(int position) {
+        return contacts.get(position) instanceof String ? TYPE_HEADER : TYPE_ITEM;
+    }
+
     @NonNull
     @Override
-    public ContactViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new ContactViewHolder(LayoutInflater.from(context).inflate(R.layout.item_contact, parent, false));
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == TYPE_ITEM) {
+            View view = LayoutInflater.from(context).inflate(R.layout.item_contact, parent, false);
+            return new ContactViewHolder(view);
+        } else {
+            View view = LayoutInflater.from(context).inflate(R.layout.item_header_contact, parent, false);
+            return new ContactHeaderViewHolder(view);
+        }
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ContactViewHolder holder, @SuppressLint("RecyclerView") int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        // Get absolute position of list
         int absolutePosition = holder.getAbsoluteAdapterPosition();
 
+        // Check if position is run out of range
         if (absolutePosition == RecyclerView.NO_POSITION) {
+            return;
+        }
+
+        // Check if holder is header item or contact item
+        if (getItemViewType(absolutePosition) == TYPE_HEADER) {
+            ((ContactHeaderViewHolder) holder).textViewHeader.setText(contacts.get(position).toString());
             return;
         }
 
         // Check if this holder is opening or not
         // Also, expand or narrow the divider based on situation
         if (absolutePosition == previousOpenItemPosition) {
-            holder.openPanel.setVisibility(View.VISIBLE);
-            holder.getDividerParam().removeRule(RelativeLayout.END_OF);
+            ((ContactViewHolder) holder).openPanel.setVisibility(View.VISIBLE);
+            ((ContactViewHolder) holder).getDividerParam().removeRule(RelativeLayout.END_OF);
         } else {
-            holder.openPanel.setVisibility(View.GONE);
-            holder.getDividerParam().addRule(RelativeLayout.END_OF, R.id.imageViewAvatar);
+            ((ContactViewHolder) holder).openPanel.setVisibility(View.GONE);
+            ((ContactViewHolder) holder).getDividerParam().addRule(RelativeLayout.END_OF, R.id.imageViewAvatar);
         }
 
-        holder.textViewFullName.setText(contacts.get(absolutePosition).getFullName());
-        holder.textViewPhone.setText(String.join(" ", "Phone", contacts.get(absolutePosition).getPhoneNumber()));
+        // Set data for contact holder
+        Contact contact = (Contact) (contacts.get(absolutePosition));
+        ((ContactViewHolder) holder).textViewFullName.setText(contact.getFullName());
+        ((ContactViewHolder) holder).textViewPhone.setText(String.join(" ", "Phone", contact.getPhoneNumber()));
 
         // Set event for contact item to display phone number when clicked
-        holder.textViewFullName.setOnClickListener(v -> {
+        ((ContactViewHolder) holder).textViewFullName.setOnClickListener(v -> {
             // Temporary save the previous clicked position
             int temp = previousOpenItemPosition;
             // Update new value for the variable below
