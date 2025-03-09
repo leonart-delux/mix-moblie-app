@@ -17,10 +17,21 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".NewMessageActivity"
+            android:label="New Message"
+            android:parentActivityName=".MainActivity"
+            android:windowSoftInputMode="adjustResize"/>
+
+        <activity
+            android:name=".ChatDetailsActivity"
+            android:label="Chat"
+            android:parentActivityName=".MainActivity"
+            android:windowSoftInputMode="adjustResize"/>
     </application>
 
 </manifest>
