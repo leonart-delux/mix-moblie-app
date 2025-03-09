@@ -1,5 +1,6 @@
 package hcmute.edu.vn.noicamheo.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -48,24 +49,21 @@ public class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        // Get absolute position of list
-        int absolutePosition = holder.getAbsoluteAdapterPosition();
-
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, @SuppressLint("RecyclerView") int position) {
         // Check if position is run out of range
-        if (absolutePosition == RecyclerView.NO_POSITION) {
+        if (position == RecyclerView.NO_POSITION) {
             return;
         }
 
         // Check if holder is header item or contact item
-        if (getItemViewType(absolutePosition) == TYPE_HEADER) {
+        if (getItemViewType(position) == TYPE_HEADER) {
             ((ContactHeaderViewHolder) holder).textViewHeader.setText(contacts.get(position).toString());
             return;
         }
 
         // Check if this holder is opening or not
         // Also, expand or narrow the divider based on situation
-        if (absolutePosition == previousOpenItemPosition) {
+        if (position == previousOpenItemPosition) {
             ((ContactViewHolder) holder).openPanel.setVisibility(View.VISIBLE);
             ((ContactViewHolder) holder).getDividerParam().removeRule(RelativeLayout.END_OF);
         } else {
@@ -74,7 +72,7 @@ public class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         // Set data for contact holder
-        Contact contact = (Contact) (contacts.get(absolutePosition));
+        Contact contact = (Contact) (contacts.get(position));
         ((ContactViewHolder) holder).textViewFullName.setText(contact.getFullName());
         ((ContactViewHolder) holder).textViewPhone.setText(String.join(" ", "Phone", contact.getPhoneNumber()));
 
@@ -83,7 +81,7 @@ public class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             // Temporary save the previous clicked position
             int temp = previousOpenItemPosition;
             // Update new value for the variable below
-            previousOpenItemPosition = absolutePosition;
+            previousOpenItemPosition = position;
 
             // In case 'previous' and current is the same --> close
             if (temp == previousOpenItemPosition) {
