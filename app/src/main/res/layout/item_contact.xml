@@ -50,7 +50,7 @@
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_below="@id/textViewPhone"
-            android:background="@drawable/contact_circle_button_bg"
+            android:background="@drawable/bg_contact_circle_button"
             android:layout_marginTop="15dp"
             android:padding="6dp"
             android:src="@drawable/ic_baseline_call_24" />
@@ -61,7 +61,7 @@
             android:layout_height="30dp"
             android:layout_below="@id/textViewPhone"
             android:layout_toEndOf="@id/imageViewCall"
-            android:background="@drawable/contact_circle_button_bg"
+            android:background="@drawable/bg_contact_circle_button"
             android:layout_marginTop="15dp"
             android:layout_marginStart="20dp"
             android:padding="6dp"
