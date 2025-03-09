@@ -2,8 +2,6 @@ package hcmute.edu.vn.noicamheo.adapter;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,10 +34,16 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactViewHolder> {
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ContactViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ContactViewHolder holder, @SuppressLint("RecyclerView") int position) {
+        int absolutePosition = holder.getAbsoluteAdapterPosition();
+
+        if (absolutePosition == RecyclerView.NO_POSITION) {
+            return;
+        }
+
         // Check if this holder is opening or not
         // Also, expand or narrow the divider based on situation
-        if (position == previousOpenItemPosition) {
+        if (absolutePosition == previousOpenItemPosition) {
             holder.openPanel.setVisibility(View.VISIBLE);
             holder.getDividerParam().removeRule(RelativeLayout.END_OF);
         } else {
@@ -47,25 +51,24 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactViewHolder> {
             holder.getDividerParam().addRule(RelativeLayout.END_OF, R.id.imageViewAvatar);
         }
 
-        holder.textViewFullName.setText(contacts.get(position).getFullName());
-        holder.textViewPhone.setText(String.join(" ", "Phone", contacts.get(position).getPhoneNumber()));
+        holder.textViewFullName.setText(contacts.get(absolutePosition).getFullName());
+        holder.textViewPhone.setText(String.join(" ", "Phone", contacts.get(absolutePosition).getPhoneNumber()));
 
         // Set event for contact item to display phone number when clicked
-        holder.textViewFullName.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Temporary save the previous clicked position
-                int temp = previousOpenItemPosition;
-                // Update new value for the variable below
-                previousOpenItemPosition = position;
-                // In case 'previous' and current is the same --> close
-                if (temp == previousOpenItemPosition) {
-                    previousOpenItemPosition = -1;
-                }
-                // Notify adapter to change view
-                notifyItemChanged(temp);
-                notifyItemChanged(previousOpenItemPosition);
+        holder.textViewFullName.setOnClickListener(v -> {
+            // Temporary save the previous clicked position
+            int temp = previousOpenItemPosition;
+            // Update new value for the variable below
+            previousOpenItemPosition = absolutePosition;
+
+            // In case 'previous' and current is the same --> close
+            if (temp == previousOpenItemPosition) {
+                previousOpenItemPosition = -1;
             }
+
+            // Notify adapter to change view
+            notifyItemChanged(temp);
+            notifyItemChanged(previousOpenItemPosition);
         });
     }
 
