@@ -62,6 +62,7 @@
             android:textColor="@color/white"
             android:textStyle="bold"
             android:layout_margin="8dp"
+            android:onClick="switchToContactPlayer"
             app:backgroundTint="@color/mint"
             app:cornerRadius="8dp" />
     </LinearLayout>
