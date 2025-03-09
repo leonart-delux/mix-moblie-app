@@ -29,6 +29,7 @@ public class ContactFragment extends Fragment {
         List<Object> contacts = new ArrayList<>();
         contacts.add("B");
         contacts.add(new Contact("Bien Xuan Huy", "0987654321"));
+
         contacts.add("N");
         contacts.add(new Contact("Nguyen Huu Danh", "0246813579"));
         contacts.add(new Contact("Nguyen Van Vu", "0135792468"));
