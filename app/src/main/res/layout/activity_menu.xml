@@ -105,6 +105,7 @@
             android:textColor="@color/white"
             android:textStyle="bold"
             android:layout_margin="8dp"
+            android:onClick="switchToSMS"
             app:backgroundTint="@color/yellow"
             app:cornerRadius="8dp" />
     </LinearLayout>
