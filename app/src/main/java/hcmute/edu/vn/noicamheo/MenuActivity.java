@@ -66,8 +66,14 @@ public class MenuActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    public void switchToContactPlayer(View view) {
+    public void switchToContact(View view) {
         Intent intent = new Intent(this, ContactActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+    }
+
+    public void switchToSchedule(View view) {
+        Intent intent = new Intent(this, ScheduleActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         startActivity(intent);
     }

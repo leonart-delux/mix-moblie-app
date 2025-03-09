@@ -62,7 +62,7 @@
             android:textColor="@color/white"
             android:textStyle="bold"
             android:layout_margin="8dp"
-            android:onClick="switchToContactPlayer"
+            android:onClick="switchToContact"
             app:backgroundTint="@color/mint"
             app:cornerRadius="8dp" />
     </LinearLayout>
@@ -132,6 +132,7 @@
             android:textColor="@color/white"
             android:textSize="24sp"
             android:textStyle="bold"
+            android:onClick="switchToSchedule"
             app:backgroundTint="@color/blue"
             app:cornerRadius="8dp"/>
 
