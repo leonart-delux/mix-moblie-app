@@ -7,17 +7,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.google.android.material.tabs.TabLayout;
 
-import hcmute.edu.vn.noicamheo.adapter.ContactAdapter;
-import hcmute.edu.vn.noicamheo.entity.Contact;
+
+import java.util.Objects;
+
+import hcmute.edu.vn.noicamheo.adapter.ContactViewPagerAdapter;
 
 public class ContactActivity extends AppCompatActivity {
-    RecyclerView recyclerViewContact;
+    TabLayout contactTabLayout;
+    ViewPager2 contactViewPager2;
+    ContactViewPagerAdapter contactViewPagerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,28 +32,31 @@ public class ContactActivity extends AppCompatActivity {
             return insets;
         });
 
-        List<Contact> contacts = new ArrayList<Contact>();
-        contacts.add(new Contact("Nguyen Tien Huy", "0123456789"));
-        contacts.add(new Contact("Nguyen Huu Danh", "0246813579"));
-        contacts.add(new Contact("Nguyen Van Vu", "0135792468"));
-        contacts.add(new Contact("Nguyen Tien Huy", "0123456789"));
-        contacts.add(new Contact("Nguyen Huu Danh", "0246813579"));
-        contacts.add(new Contact("Nguyen Van Vu", "0135792468"));
-        contacts.add(new Contact("Nguyen Tien Huy", "0123456789"));
-        contacts.add(new Contact("Nguyen Huu Danh", "0246813579"));
-        contacts.add(new Contact("Nguyen Van Vu", "0135792468"));
-        contacts.add(new Contact("Nguyen Tien Huy", "0123456789"));
-        contacts.add(new Contact("Nguyen Huu Danh", "0246813579"));
-        contacts.add(new Contact("Nguyen Van Vu", "0135792468"));
-        contacts.add(new Contact("Nguyen Tien Huy", "0123456789"));
-        contacts.add(new Contact("Nguyen Huu Danh", "0246813579"));
-        contacts.add(new Contact("Nguyen Van Vu", "0135792468"));
-        contacts.add(new Contact("Nguyen Tien Huy", "0123456789"));
-        contacts.add(new Contact("Nguyen Huu Danh", "0246813579"));
-        contacts.add(new Contact("Nguyen Van Vu", "0135792468"));
+        contactTabLayout = findViewById(R.id.contactTabLayout);
+        contactViewPager2 = findViewById(R.id.contactViewPager2);
+        contactViewPagerAdapter = new ContactViewPagerAdapter(this);
+        contactViewPager2.setAdapter(contactViewPagerAdapter);
 
-        recyclerViewContact = findViewById(R.id.recyclerViewContactHolder);
-        recyclerViewContact.setLayoutManager(new LinearLayoutManager(this));
-        recyclerViewContact.setAdapter(new ContactAdapter(getApplicationContext(), contacts));
+        contactTabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                contactViewPager2.setCurrentItem(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {}
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {}
+        });
+
+        contactViewPager2.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                Objects.requireNonNull(contactTabLayout.getTabAt(position)).select();
+            }
+        });
     }
 }

@@ -11,9 +11,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import hcmute.edu.vn.noicamheo.R;
 
-public class ContactViewHolder extends RecyclerView.ViewHolder {
-    RelativeLayout mainLayout;
-    TextView textViewFullName;
+public class RecentViewHolder extends RecyclerView.ViewHolder {
+    ImageView imageViewCallType;
+    TextView textViewRecentCall;
     RelativeLayout openPanel;
     TextView textViewPhone;
     ImageView imageViewCall;
@@ -21,16 +21,15 @@ public class ContactViewHolder extends RecyclerView.ViewHolder {
     LinearLayout divider;
     RelativeLayout.LayoutParams params;
 
-
-    public ContactViewHolder(@NonNull View itemView) {
+    public RecentViewHolder(@NonNull View itemView) {
         super(itemView);
-        mainLayout = itemView.findViewById(R.id.itemContact);
-        textViewFullName = itemView.findViewById(R.id.textViewFullName);
+        imageViewCallType = itemView.findViewById(R.id.imageViewCallType);
+        textViewRecentCall = itemView.findViewById(R.id.textViewRecentCall);
         openPanel = itemView.findViewById(R.id.relativeLayoutOpeningPanel);
         textViewPhone = itemView.findViewById(R.id.textViewPhone);
         imageViewCall = itemView.findViewById(R.id.imageViewCall);
         imageViewMessage = itemView.findViewById(R.id.imageViewMessage);
-        divider = itemView.findViewById(R.id.contactItemDivider);
+        divider = itemView.findViewById(R.id.recentItemDivider);
         params = (RelativeLayout.LayoutParams) divider.getLayoutParams();
     }
 

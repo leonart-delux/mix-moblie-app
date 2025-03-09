@@ -1,30 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF">
 
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/contactViewPager2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/contactTabLayout"/>
 
-    <SearchView
-        android:id="@+id/searchViewContact"
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/contactTabLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxWidth="488dp"
-        android:gravity="center_horizontal"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginBottom="10dp"
-        android:queryHint="..."
-        android:background="@drawable/bg_contact_search_view"
-        android:iconifiedByDefault="false"/>
+        app:tabIconTint="@color/tab_icon_color"
+        app:tabIndicatorColor="@color/blue"
+        app:tabSelectedTextColor="@color/blue"
+        android:layout_alignParentBottom="true"
+        app:tabIndicatorGravity="top"
+        android:background="@color/white">
 
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:icon="@drawable/ic_baseline_call_24"
+            android:text="@string/contact_keypad_tab" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewContactHolder"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp"
-        android:layout_below="@id/searchViewContact" />
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:icon="@drawable/ic_baseline_access_time_24"
+            android:text="@string/contact_recent_tab" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:icon="@drawable/ic_baseline_account_circle_24"
+            android:text="@string/contact_contact_tab" />
+
+    </com.google.android.material.tabs.TabLayout>
 
 </RelativeLayout>
