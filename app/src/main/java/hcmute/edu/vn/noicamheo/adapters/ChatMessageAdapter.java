@@ -74,23 +74,25 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             timeText.setText(timeFormat.format(message.getTimestamp()));
 
             // Adjust layout for sent vs received messages
-            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) messageCard.getLayoutParams();
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            
             if (message.isOutgoing()) {
                 params.gravity = Gravity.END;
                 messageCard.setCardBackgroundColor(itemView.getContext().getResources()
                         .getColor(android.R.color.holo_blue_light));
                 messageText.setTextColor(itemView.getContext().getResources()
                         .getColor(android.R.color.white));
-                params.setMarginStart(64);
-                params.setMarginEnd(8);
+                params.setMargins(64, 4, 8, 4); // left, top, right, bottom
             } else {
                 params.gravity = Gravity.START;
                 messageCard.setCardBackgroundColor(itemView.getContext().getResources()
                         .getColor(android.R.color.white));
                 messageText.setTextColor(itemView.getContext().getResources()
                         .getColor(android.R.color.black));
-                params.setMarginStart(8);
-                params.setMarginEnd(64);
+                params.setMargins(8, 4, 64, 4); // left, top, right, bottom
             }
             messageCard.setLayoutParams(params);
         }
