@@ -38,15 +38,9 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <ImageView
-                android:id="@+id/img_cd"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:src="@drawable/ic_cd"
-                android:scaleType="centerCrop" />
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginTop="8dp">
 
             <TextView
                 android:id="@+id/tv_song_title"
@@ -55,8 +49,47 @@
                 android:text="Song Title"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:layout_marginLeft="12dp"
                 android:textColor="#333" />
+
+            <TextView
+                android:id="@+id/tv_artist_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Artist Name"
+                android:textSize="14sp"
+                android:textColor="#666"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:id="@+id/tv_current_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0:00"
+                android:textSize="12sp"
+                android:textColor="@color/black"
+                android:layout_marginEnd="8dp"/>
+
+            <SeekBar
+                android:id="@+id/seek_bar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+
+            <TextView
+                android:id="@+id/tv_total_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0:00"
+                android:textSize="12sp"
+                android:textColor="@color/black"
+                android:layout_marginStart="8dp"/>
         </LinearLayout>
 
         <LinearLayout
@@ -95,15 +128,6 @@
                 android:src="@drawable/ic_repeat" />
         </LinearLayout>
 
-        <SeekBar
-            android:id="@+id/seek_bar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:progress="0"
-            android:max="100"
-            android:thumbTint="#333" />
-
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -120,6 +144,5 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/music_player_container" />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

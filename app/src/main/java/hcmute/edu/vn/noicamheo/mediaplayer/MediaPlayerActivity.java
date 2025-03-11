@@ -2,13 +2,16 @@ package hcmute.edu.vn.noicamheo.mediaplayer;
 
 import android.Manifest;
 import android.content.ContentResolver;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
+import android.widget.ImageButton;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -18,13 +21,14 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.media3.common.MediaItem;
+import androidx.media3.exoplayer.ExoPlayer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import hcmute.edu.vn.noicamheo.MenuActivity;
 import hcmute.edu.vn.noicamheo.R;
 import hcmute.edu.vn.noicamheo.adapter.SongAdapter;
 import hcmute.edu.vn.noicamheo.entity.Song;
@@ -34,12 +38,19 @@ public class MediaPlayerActivity extends AppCompatActivity {
     private SongAdapter songAdapter;
     private List<Song> songList = new ArrayList<>();
     private static final int REQUEST_CODE_PERMISSION = 123;
+    private ExoPlayer player;
+    private TextView tvSongTitle, tvArtistName;
+    private ImageButton btnPlayPause;
+    private SeekBar seekBar;
+    private TextView tvCurrentTime, tvTotalTime;
+    private Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_mediaplay);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mediaplay), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -48,25 +59,32 @@ public class MediaPlayerActivity extends AppCompatActivity {
 
         recyclerView = findViewById(R.id.recycler_view_songs);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        tvSongTitle = findViewById(R.id.tv_song_title);
+        tvArtistName = findViewById(R.id.tv_artist_name);
+        btnPlayPause = findViewById(R.id.btn_play_pause);
+        seekBar = findViewById(R.id.seek_bar);
+        tvCurrentTime = findViewById(R.id.tv_current_time);
+        tvTotalTime = findViewById(R.id.tv_total_time);
 
-        // Kiểm tra và yêu cầu quyền
+        player = new ExoPlayer.Builder(this).build();
+
         if (checkPermission()) {
             loadSongs();
         } else {
             requestPermission();
         }
 
-        songAdapter = new SongAdapter(this, songList, song -> {
-            Toast.makeText(this, "Playing: " + song.getTitle(), Toast.LENGTH_SHORT).show();
-        });
+        songAdapter = new SongAdapter(this, songList, this::playSong);
         recyclerView.setAdapter(songAdapter);
+
+        btnPlayPause.setOnClickListener(v -> togglePlayPause());
 
         androidx.appcompat.widget.SearchView searchView = findViewById(R.id.sv_media);
         searchView.setQuery("Music", false);
     }
 
     private boolean checkPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED;
         } else {
             return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
@@ -92,10 +110,8 @@ public class MediaPlayerActivity extends AppCompatActivity {
     }
 
     private void loadSongs() {
-        songList.clear(); // Xóa danh sách cũ trước khi load lại
+        songList.clear();
         ContentResolver contentResolver = getContentResolver();
-
-        // Quét cả external storage
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 
         String[] projection = {
@@ -119,7 +135,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
                 String artist = cursor.getString(artistColumn);
                 String path = cursor.getString(pathColumn);
 
-                if (path != null && path.endsWith(".mp3")) { // Chỉ lấy file MP3
+                if (path != null && path.endsWith(".mp3")) {
                     songList.add(new Song(title, artist, path));
                 }
             } while (cursor.moveToNext());
@@ -130,15 +146,37 @@ public class MediaPlayerActivity extends AppCompatActivity {
         }
 
         if (songAdapter != null) {
-            songAdapter.notifyDataSetChanged(); // Cập nhật RecyclerView
+            songAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void playSong(Song song) {
+        tvSongTitle.setText(song.getTitle());
+        tvArtistName.setText(song.getArtist());
+
+        MediaItem mediaItem = MediaItem.fromUri(Uri.parse(song.getPath()));
+        player.setMediaItem(mediaItem);
+        player.prepare();
+        player.play();
+
+        btnPlayPause.setImageResource(R.drawable.ic_pause);
+    }
+
+    private void togglePlayPause() {
+        if (player.isPlaying()) {
+            player.pause();
+            btnPlayPause.setImageResource(R.drawable.ic_play);
+        } else {
+            player.play();
+            btnPlayPause.setImageResource(R.drawable.ic_pause);
         }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Intent intent = new Intent(this, MenuActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        startActivity(intent);
+        if (player != null) {
+            player.release();
+        }
     }
 }
