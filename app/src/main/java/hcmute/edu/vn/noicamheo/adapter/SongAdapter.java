@@ -39,11 +39,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
-        Song song = songList.get(position);
-        holder.tvSongName.setText(song.getTitle());
-        holder.tvArtistName.setText(song.getArtist());
-
-        holder.itemView.setOnClickListener(v -> listener.onItemClick(song));
+        holder.bind(songList.get(position)); // Sử dụng hàm bind()
     }
 
     @Override
@@ -51,7 +47,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
         return songList.size();
     }
 
-    public static class SongViewHolder extends RecyclerView.ViewHolder {
+    public class SongViewHolder extends RecyclerView.ViewHolder {
         TextView tvSongName, tvArtistName;
         ImageView imgSongThumb;
         ImageButton btnMore;
@@ -62,6 +58,13 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.SongViewHolder
             tvArtistName = itemView.findViewById(R.id.tv_artist_name);
             imgSongThumb = itemView.findViewById(R.id.img_song_thumb);
             btnMore = itemView.findViewById(R.id.btn_more);
+        }
+
+        public void bind(Song song) {
+            tvSongName.setText(song.getTitle());
+            tvArtistName.setText(song.getArtist());
+
+            itemView.setOnClickListener(v -> listener.onItemClick(song));
         }
     }
 }
