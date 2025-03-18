@@ -31,7 +31,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         this.messages = new ArrayList<>();
         this.listener = listener;
         this.timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());
-        this.dateTimeFormat = new SimpleDateFormat("dd/MM/yyyy h:mm a", Locale.getDefault()); // Định dạng mới
+        this.dateTimeFormat = new SimpleDateFormat("dd/MM/yyyy h:mm a", Locale.getDefault());
     }
 
     @NonNull
@@ -97,7 +97,6 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         void bind(Message message) {
             senderNameText.setText(message.getSenderName());
             messagePreviewText.setText(message.getContent());
-
             messageTimeText.setText(dateTimeFormat.format(message.getTimestamp()));
         }
     }

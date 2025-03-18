@@ -21,6 +21,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -45,6 +46,7 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
     private boolean isLoading = false;
     private static final int PAGE_SIZE = 20;
     private long lastMessageDate = Long.MAX_VALUE;
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +58,7 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
 
         RecyclerView messagesRecyclerView = findViewById(R.id.messagesRecyclerView);
         FloatingActionButton newMessageFab = findViewById(R.id.newMessageFab);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
         adapter = new MessageAdapter(this);
         layoutManager = new LinearLayoutManager(this);
@@ -75,21 +78,21 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
             }
         });
 
+        swipeRefreshLayout.setOnRefreshListener(this::refreshMessages);
+
         requestPermissions();
 
         newMessageLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
-                        lastMessageDate = Long.MAX_VALUE;
-                        adapter.clearMessages();
-                        loadMoreMessages();
+                        refreshMessages(); // Làm mới danh sách sau khi gửi tin nhắn
                     }
                 });
 
         newMessageFab.setOnClickListener(v -> {
             Intent intent = new Intent(this, NewMessageActivity.class);
-            newMessageLauncher.launch(intent);
+            newMessageLauncher.launch(intent); // Mở NewMessageActivity
         });
     }
 
@@ -151,6 +154,26 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         });
     }
 
+    private void refreshMessages() {
+        isLoading = true;
+        lastMessageDate = Long.MAX_VALUE;
+        adapter.clearMessages();
+
+        executorService.execute(() -> {
+            List<Message> newMessages = loadMessagesFromSystem(lastMessageDate);
+            List<Message> groupedMessages = groupMessagesBySender(newMessages);
+
+            mainHandler.post(() -> {
+                if (!groupedMessages.isEmpty()) {
+                    lastMessageDate = groupedMessages.get(groupedMessages.size() - 1).getTimestamp().getTime();
+                    adapter.addMessages(groupedMessages);
+                }
+                isLoading = false;
+                swipeRefreshLayout.setRefreshing(false);
+            });
+        });
+    }
+
     private List<Message> loadMessagesFromSystem(long maxDate) {
         List<Message> messages = new ArrayList<>();
 
@@ -202,20 +225,17 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         return messages;
     }
 
-    // Phương thức mới để nhóm tin nhắn theo người gửi
     private List<Message> groupMessagesBySender(List<Message> messages) {
         Map<String, Message> latestMessages = new HashMap<>();
 
         for (Message message : messages) {
             String senderId = message.getSenderId();
-            // Chỉ giữ tin nhắn mới nhất từ mỗi người gửi
             if (!latestMessages.containsKey(senderId) ||
                     message.getTimestamp().getTime() > latestMessages.get(senderId).getTimestamp().getTime()) {
                 latestMessages.put(senderId, message);
             }
         }
 
-        // Chuyển từ Map sang List và sắp xếp theo thời gian giảm dần
         List<Message> groupedMessages = new ArrayList<>(latestMessages.values());
         groupedMessages.sort((m1, m2) -> Long.compare(m2.getTimestamp().getTime(), m1.getTimestamp().getTime()));
 
