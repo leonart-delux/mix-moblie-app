@@ -26,7 +26,9 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -41,7 +43,7 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private LinearLayoutManager layoutManager;
     private boolean isLoading = false;
-    private static final int PAGE_SIZE = 20; // The number of message in one page
+    private static final int PAGE_SIZE = 20;
     private long lastMessageDate = Long.MAX_VALUE;
 
     @Override
@@ -49,21 +51,17 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sms);
 
-        // Setup toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Initialize views
         RecyclerView messagesRecyclerView = findViewById(R.id.messagesRecyclerView);
         FloatingActionButton newMessageFab = findViewById(R.id.newMessageFab);
 
-        // Setup RecyclerView
         adapter = new MessageAdapter(this);
         layoutManager = new LinearLayoutManager(this);
         messagesRecyclerView.setLayoutManager(layoutManager);
         messagesRecyclerView.setAdapter(adapter);
 
-        // Add scroll listener for RecyclerView
         messagesRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -77,26 +75,62 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
             }
         });
 
-        // Request permission and load the first message
         requestPermissions();
 
-        // Setup new message launcher
         newMessageLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK) {
-                        // Reset và load lại từ đầu
                         lastMessageDate = Long.MAX_VALUE;
                         adapter.clearMessages();
                         loadMoreMessages();
                     }
                 });
 
-        // Setup FAB click listener
         newMessageFab.setOnClickListener(v -> {
             Intent intent = new Intent(this, NewMessageActivity.class);
             newMessageLauncher.launch(intent);
         });
+    }
+
+    @Override
+    public void onMessageClick(Message message) {
+        Intent intent = ChatDetailsActivity.newIntent(
+                this,
+                message.getSenderName(),
+                message.getSenderId()
+        );
+        startActivity(intent);
+    }
+
+    private void requestPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
+                != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                        != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{
+                            Manifest.permission.READ_SMS,
+                            Manifest.permission.READ_CONTACTS
+                    },
+                    SMS_AND_CONTACTS_PERMISSION_REQUEST_CODE);
+        } else {
+            loadMoreMessages();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == SMS_AND_CONTACTS_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED &&
+                    grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                loadMoreMessages();
+            } else {
+                Toast.makeText(this, "Permissions denied. Cannot load messages.", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void loadMoreMessages() {
@@ -105,11 +139,12 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
 
         executorService.execute(() -> {
             List<Message> newMessages = loadMessagesFromSystem(lastMessageDate);
+            List<Message> groupedMessages = groupMessagesBySender(newMessages);
 
             mainHandler.post(() -> {
-                if (!newMessages.isEmpty()) {
-                    lastMessageDate = newMessages.get(newMessages.size() - 1).getTimestamp().getTime();
-                    adapter.addMessages(newMessages);
+                if (!groupedMessages.isEmpty()) {
+                    lastMessageDate = groupedMessages.get(groupedMessages.size() - 1).getTimestamp().getTime();
+                    adapter.addMessages(groupedMessages);
                 }
                 isLoading = false;
             });
@@ -167,44 +202,24 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         return messages;
     }
 
-    @Override
-    public void onMessageClick(Message message) {
-        Intent intent = ChatDetailsActivity.newIntent(
-                this,
-                message.getSenderName(),
-                message.getSenderId()
-        );
-        startActivity(intent);
-    }
+    // Phương thức mới để nhóm tin nhắn theo người gửi
+    private List<Message> groupMessagesBySender(List<Message> messages) {
+        Map<String, Message> latestMessages = new HashMap<>();
 
-    private void requestPermissions() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                        != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{
-                            Manifest.permission.READ_SMS,
-                            Manifest.permission.READ_CONTACTS
-                    },
-                    SMS_AND_CONTACTS_PERMISSION_REQUEST_CODE);
-        } else {
-            loadMoreMessages();
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == SMS_AND_CONTACTS_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED &&
-                    grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                loadMoreMessages();
-            } else {
-                Toast.makeText(this, "Permissions denied. Cannot load messages.", Toast.LENGTH_SHORT).show();
+        for (Message message : messages) {
+            String senderId = message.getSenderId();
+            // Chỉ giữ tin nhắn mới nhất từ mỗi người gửi
+            if (!latestMessages.containsKey(senderId) ||
+                    message.getTimestamp().getTime() > latestMessages.get(senderId).getTimestamp().getTime()) {
+                latestMessages.put(senderId, message);
             }
         }
+
+        // Chuyển từ Map sang List và sắp xếp theo thời gian giảm dần
+        List<Message> groupedMessages = new ArrayList<>(latestMessages.values());
+        groupedMessages.sort((m1, m2) -> Long.compare(m2.getTimestamp().getTime(), m1.getTimestamp().getTime()));
+
+        return groupedMessages;
     }
 
     private String getContactName(String phoneNumber) {

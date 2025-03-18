@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -20,6 +21,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     private List<Message> messages;
     private final OnMessageClickListener listener;
     private final SimpleDateFormat timeFormat;
+    private final SimpleDateFormat dateTimeFormat;
 
     public interface OnMessageClickListener {
         void onMessageClick(Message message);
@@ -29,6 +31,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         this.messages = new ArrayList<>();
         this.listener = listener;
         this.timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());
+        this.dateTimeFormat = new SimpleDateFormat("dd/MM/yyyy h:mm a", Locale.getDefault()); // Định dạng mới
     }
 
     @NonNull
@@ -50,26 +53,22 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         return messages.size();
     }
 
-    // Update list of messages
     public void setMessages(List<Message> messages) {
         this.messages = messages;
         notifyDataSetChanged();
     }
 
-    // Add new message to the beginning of the list
     public void addMessage(Message message) {
         messages.add(0, message);
         notifyItemInserted(0);
     }
 
-    // lazy loading
     public void addMessages(List<Message> newMessages) {
         int startPosition = messages.size();
         messages.addAll(newMessages);
         notifyItemRangeInserted(startPosition, newMessages.size());
     }
 
-    // Clear all messages when reset
     public void clearMessages() {
         int size = messages.size();
         messages.clear();
@@ -98,7 +97,8 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         void bind(Message message) {
             senderNameText.setText(message.getSenderName());
             messagePreviewText.setText(message.getContent());
-            messageTimeText.setText(timeFormat.format(message.getTimestamp()));
+
+            messageTimeText.setText(dateTimeFormat.format(message.getTimestamp()));
         }
     }
 }
