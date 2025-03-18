@@ -50,14 +50,30 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         return messages.size();
     }
 
+    // Update list of messages
     public void setMessages(List<Message> messages) {
         this.messages = messages;
         notifyDataSetChanged();
     }
 
+    // Add new message to the beginning of the list
     public void addMessage(Message message) {
         messages.add(0, message);
         notifyItemInserted(0);
+    }
+
+    // lazy loading
+    public void addMessages(List<Message> newMessages) {
+        int startPosition = messages.size();
+        messages.addAll(newMessages);
+        notifyItemRangeInserted(startPosition, newMessages.size());
+    }
+
+    // Clear all messages when reset
+    public void clearMessages() {
+        int size = messages.size();
+        messages.clear();
+        notifyItemRangeRemoved(0, size);
     }
 
     class MessageViewHolder extends RecyclerView.ViewHolder {
