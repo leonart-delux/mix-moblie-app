@@ -42,11 +42,12 @@ public class MediaPlayerActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_PERMISSION = 123;
     private ExoPlayer player;
     private TextView tvSongTitle, tvArtistName;
-    private ImageButton btnPlayPause, btnPrevious, btnNext;
+    private ImageButton btnPlayPause, btnPrevious, btnNext, btnRepeat;
     private SeekBar seekBar;
     private TextView tvCurrentTime, tvTotalTime;
     private Handler handler = new Handler();
     private int currentSongIndex = -1;
+    private boolean isRepeat = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,9 +68,13 @@ public class MediaPlayerActivity extends AppCompatActivity {
         btnPlayPause = findViewById(R.id.btn_play_pause);
         btnPrevious = findViewById(R.id.btn_previous);
         btnNext = findViewById(R.id.btn_next);
+        btnRepeat = findViewById(R.id.btn_repeat);
         seekBar = findViewById(R.id.seek_bar);
         tvCurrentTime = findViewById(R.id.tv_current_time);
         tvTotalTime = findViewById(R.id.tv_total_time);
+
+        // Thiết lập icon ban đầu cho btnRepeat
+        btnRepeat.setImageResource(R.drawable.ic_repeat); // Ban đầu là ic_repeat
 
         player = new ExoPlayer.Builder(this).build();
         player.addListener(new Player.Listener() {
@@ -78,6 +83,10 @@ public class MediaPlayerActivity extends AppCompatActivity {
                 if (state == Player.STATE_READY) {
                     seekBar.setMax((int) player.getDuration());
                     tvTotalTime.setText(formatTime((int) player.getDuration()));
+                } else if (state == Player.STATE_ENDED) {
+                    if (!isRepeat) {
+                        playNextSong();
+                    }
                 }
             }
         });
@@ -109,6 +118,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
         btnPlayPause.setOnClickListener(v -> togglePlayPause());
         btnPrevious.setOnClickListener(v -> playPreviousSong());
         btnNext.setOnClickListener(v -> playNextSong());
+        btnRepeat.setOnClickListener(v -> repeatSong());
     }
 
     private boolean checkPermission() {
@@ -179,7 +189,6 @@ public class MediaPlayerActivity extends AppCompatActivity {
     }
 
     private void playSong(Song song) {
-        // Cập nhật currentSongIndex dựa trên bài hát được chọn
         currentSongIndex = songList.indexOf(song);
 
         tvSongTitle.setText(song.getTitle());
@@ -189,6 +198,8 @@ public class MediaPlayerActivity extends AppCompatActivity {
         player.setMediaItem(mediaItem);
         player.prepare();
         player.play();
+
+        player.setRepeatMode(isRepeat ? Player.REPEAT_MODE_ONE : Player.REPEAT_MODE_OFF);
 
         btnPlayPause.setImageResource(R.drawable.ic_pause);
 
@@ -230,6 +241,17 @@ public class MediaPlayerActivity extends AppCompatActivity {
             player.play();
             btnPlayPause.setImageResource(R.drawable.ic_pause);
             handler.post(updateSeekBar);
+        }
+    }
+
+    private void repeatSong() {
+        isRepeat = !isRepeat;
+        if (isRepeat) {
+            btnRepeat.setImageResource(R.drawable.ic_repeat_one);
+            player.setRepeatMode(Player.REPEAT_MODE_ONE);
+        } else {
+            btnRepeat.setImageResource(R.drawable.ic_repeat);
+            player.setRepeatMode(Player.REPEAT_MODE_OFF);
         }
     }
 
