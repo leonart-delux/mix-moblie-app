@@ -22,12 +22,14 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.media3.common.MediaItem;
+import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import hcmute.edu.vn.noicamheo.R;
 import hcmute.edu.vn.noicamheo.adapter.SongAdapter;
@@ -40,10 +42,11 @@ public class MediaPlayerActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_PERMISSION = 123;
     private ExoPlayer player;
     private TextView tvSongTitle, tvArtistName;
-    private ImageButton btnPlayPause;
+    private ImageButton btnPlayPause, btnPrevious, btnNext;
     private SeekBar seekBar;
     private TextView tvCurrentTime, tvTotalTime;
     private Handler handler = new Handler();
+    private int currentSongIndex = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,11 +65,37 @@ public class MediaPlayerActivity extends AppCompatActivity {
         tvSongTitle = findViewById(R.id.tv_song_title);
         tvArtistName = findViewById(R.id.tv_artist_name);
         btnPlayPause = findViewById(R.id.btn_play_pause);
+        btnPrevious = findViewById(R.id.btn_previous);
+        btnNext = findViewById(R.id.btn_next);
         seekBar = findViewById(R.id.seek_bar);
         tvCurrentTime = findViewById(R.id.tv_current_time);
         tvTotalTime = findViewById(R.id.tv_total_time);
 
         player = new ExoPlayer.Builder(this).build();
+        player.addListener(new Player.Listener() {
+            @Override
+            public void onPlaybackStateChanged(int state) {
+                if (state == Player.STATE_READY) {
+                    seekBar.setMax((int) player.getDuration());
+                    tvTotalTime.setText(formatTime((int) player.getDuration()));
+                }
+            }
+        });
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    player.seekTo(progress);
+                    tvCurrentTime.setText(formatTime(progress));
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
 
         if (checkPermission()) {
             loadSongs();
@@ -78,9 +107,8 @@ public class MediaPlayerActivity extends AppCompatActivity {
         recyclerView.setAdapter(songAdapter);
 
         btnPlayPause.setOnClickListener(v -> togglePlayPause());
-
-        androidx.appcompat.widget.SearchView searchView = findViewById(R.id.sv_media);
-        searchView.setQuery("Music", false);
+        btnPrevious.setOnClickListener(v -> playPreviousSong());
+        btnNext.setOnClickListener(v -> playNextSong());
     }
 
     private boolean checkPermission() {
@@ -151,6 +179,9 @@ public class MediaPlayerActivity extends AppCompatActivity {
     }
 
     private void playSong(Song song) {
+        // Cập nhật currentSongIndex dựa trên bài hát được chọn
+        currentSongIndex = songList.indexOf(song);
+
         tvSongTitle.setText(song.getTitle());
         tvArtistName.setText(song.getArtist());
 
@@ -160,6 +191,35 @@ public class MediaPlayerActivity extends AppCompatActivity {
         player.play();
 
         btnPlayPause.setImageResource(R.drawable.ic_pause);
+
+        handler.removeCallbacks(updateSeekBar);
+        handler.post(updateSeekBar);
+    }
+
+    private void playPreviousSong() {
+        if (songList.isEmpty()) {
+            Toast.makeText(this, "No songs available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (currentSongIndex <= 0) {
+            currentSongIndex = songList.size() - 1;
+        } else {
+            currentSongIndex--;
+        }
+        playSong(songList.get(currentSongIndex));
+    }
+
+    private void playNextSong() {
+        if (songList.isEmpty()) {
+            Toast.makeText(this, "No songs available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (currentSongIndex >= songList.size() - 1) {
+            currentSongIndex = 0;
+        } else {
+            currentSongIndex++;
+        }
+        playSong(songList.get(currentSongIndex));
     }
 
     private void togglePlayPause() {
@@ -169,7 +229,23 @@ public class MediaPlayerActivity extends AppCompatActivity {
         } else {
             player.play();
             btnPlayPause.setImageResource(R.drawable.ic_pause);
+            handler.post(updateSeekBar);
         }
+    }
+
+    private final Runnable updateSeekBar = new Runnable() {
+        @Override
+        public void run() {
+            if (player != null) {
+                seekBar.setProgress((int) player.getCurrentPosition());
+                tvCurrentTime.setText(formatTime((int) player.getCurrentPosition()));
+                handler.postDelayed(this, 500);
+            }
+        }
+    };
+
+    private String formatTime(int millis) {
+        return String.format("%02d:%02d", TimeUnit.MILLISECONDS.toMinutes(millis), TimeUnit.MILLISECONDS.toSeconds(millis) % 60);
     }
 
     @Override
@@ -178,5 +254,6 @@ public class MediaPlayerActivity extends AppCompatActivity {
         if (player != null) {
             player.release();
         }
+        handler.removeCallbacks(updateSeekBar);
     }
 }
