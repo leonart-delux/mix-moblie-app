@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -38,7 +39,8 @@ import hcmute.edu.vn.noicamheo.entity.Song;
 public class MediaPlayerActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private SongAdapter songAdapter;
-    private List<Song> songList = new ArrayList<>();
+    private List<Song> songList = new ArrayList<>(); // Danh sách gốc
+    private List<Song> filteredSongList = new ArrayList<>(); // Danh sách lọc
     private static final int REQUEST_CODE_PERMISSION = 123;
     private ExoPlayer player;
     private TextView tvSongTitle, tvArtistName;
@@ -48,6 +50,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
     private Handler handler = new Handler();
     private int currentSongIndex = -1;
     private boolean isRepeat = false;
+    private SearchView searchView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,9 +75,10 @@ public class MediaPlayerActivity extends AppCompatActivity {
         seekBar = findViewById(R.id.seek_bar);
         tvCurrentTime = findViewById(R.id.tv_current_time);
         tvTotalTime = findViewById(R.id.tv_total_time);
+        searchView = findViewById(R.id.sv_media);
+        searchView.setQueryHint("Search");
 
-        // Thiết lập icon ban đầu cho btnRepeat
-        btnRepeat.setImageResource(R.drawable.ic_repeat); // Ban đầu là ic_repeat
+        btnRepeat.setImageResource(R.drawable.ic_repeat);
 
         player = new ExoPlayer.Builder(this).build();
         player.addListener(new Player.Listener() {
@@ -112,13 +116,27 @@ public class MediaPlayerActivity extends AppCompatActivity {
             requestPermission();
         }
 
-        songAdapter = new SongAdapter(this, songList, this::playSong);
+        songAdapter = new SongAdapter(this, filteredSongList, this::playSong);
         recyclerView.setAdapter(songAdapter);
+        filteredSongList.addAll(songList);
 
         btnPlayPause.setOnClickListener(v -> togglePlayPause());
         btnPrevious.setOnClickListener(v -> playPreviousSong());
         btnNext.setOnClickListener(v -> playNextSong());
         btnRepeat.setOnClickListener(v -> repeatSong());
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                filterSongs(newText);
+                return true;
+            }
+        });
     }
 
     private boolean checkPermission() {
@@ -149,6 +167,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
 
     private void loadSongs() {
         songList.clear();
+        filteredSongList.clear();
         ContentResolver contentResolver = getContentResolver();
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 
@@ -174,7 +193,9 @@ public class MediaPlayerActivity extends AppCompatActivity {
                 String path = cursor.getString(pathColumn);
 
                 if (path != null && path.endsWith(".mp3")) {
-                    songList.add(new Song(title, artist, path));
+                    Song song = new Song(title, artist, path);
+                    songList.add(song);
+                    filteredSongList.add(song); // Thêm vào cả hai danh sách
                 }
             } while (cursor.moveToNext());
 
@@ -186,6 +207,22 @@ public class MediaPlayerActivity extends AppCompatActivity {
         if (songAdapter != null) {
             songAdapter.notifyDataSetChanged();
         }
+    }
+
+    private void filterSongs(String query) {
+        filteredSongList.clear();
+        if (query.isEmpty()) {
+            filteredSongList.addAll(songList);
+        } else {
+            String lowerCaseQuery = query.toLowerCase();
+            for (Song song : songList) {
+                if (song.getTitle().toLowerCase().contains(lowerCaseQuery) ||
+                        song.getArtist().toLowerCase().contains(lowerCaseQuery)) {
+                    filteredSongList.add(song);
+                }
+            }
+        }
+        songAdapter.notifyDataSetChanged();
     }
 
     private void playSong(Song song) {
