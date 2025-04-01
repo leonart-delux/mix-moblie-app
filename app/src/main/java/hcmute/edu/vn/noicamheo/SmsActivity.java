@@ -1,5 +1,7 @@
 package hcmute.edu.vn.noicamheo;
 
+import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
+
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -10,6 +12,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -85,12 +88,18 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         newMessageLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
+                    Log.d(TAG, "newMessageLauncher callback triggered with result code: " + result.getResultCode());
                     if (result.getResultCode() == RESULT_OK) {
+                        Log.i(TAG, "Result OK received, refreshing messages");
                         refreshMessages(); // Làm mới danh sách sau khi gửi tin nhắn
+                    } else {
+                        Log.w(TAG, "Result not OK, code: " + result.getResultCode());
                     }
                 });
 
+        // Thêm log vào sự kiện nhấn nút FAB
         newMessageFab.setOnClickListener(v -> {
+            Log.d(TAG, "FAB clicked, launching NewMessageActivity");
             Intent intent = new Intent(this, NewMessageActivity.class);
             newMessageLauncher.launch(intent); // Mở NewMessageActivity
         });
@@ -182,7 +191,7 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
             return messages;
         }
 
-        Uri uri = Telephony.Sms.Inbox.CONTENT_URI;
+        Uri uri = Telephony.Sms.CONTENT_URI; // Tải tất cả tin nhắn (Inbox + Sent)
         String selection = Telephony.Sms.DATE + " < ?";
         String[] selectionArgs = new String[]{String.valueOf(maxDate)};
 
@@ -199,25 +208,30 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
             int addressIndex = cursor.getColumnIndex(Telephony.Sms.ADDRESS);
             int bodyIndex = cursor.getColumnIndex(Telephony.Sms.BODY);
             int dateIndex = cursor.getColumnIndex(Telephony.Sms.DATE);
+            int typeIndex = cursor.getColumnIndex(Telephony.Sms.TYPE);
 
             while (cursor.moveToNext()) {
                 String id = cursor.getString(idIndex);
                 String address = cursor.getString(addressIndex);
                 String body = cursor.getString(bodyIndex);
                 long date = cursor.getLong(dateIndex);
+                int type = cursor.getInt(typeIndex);
 
-                String senderName = getContactName(address);
+                // Xác định tin nhắn là gửi hay nhận
+                boolean isOutgoing = (type == Telephony.Sms.MESSAGE_TYPE_SENT);
+                String senderId = isOutgoing ? "current_user_id" : address;
+                String recipientId = isOutgoing ? address : "current_user_id";
+                String senderName = isOutgoing ? "Me" : getContactName(address);
 
                 Message message = new Message(
                         id,
-                        address,
+                        senderId,
                         senderName,
-                        "current_user_id",
+                        recipientId,
                         body,
                         new Date(date),
-                        false
+                        isOutgoing
                 );
-
                 messages.add(message);
             }
             cursor.close();
@@ -229,16 +243,28 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         Map<String, Message> latestMessages = new HashMap<>();
 
         for (Message message : messages) {
-            String senderId = message.getSenderId();
-            if (!latestMessages.containsKey(senderId) ||
-                    message.getTimestamp().getTime() > latestMessages.get(senderId).getTimestamp().getTime()) {
-                latestMessages.put(senderId, message);
+            String conversationId = message.isOutgoing() ? message.getRecipientId() : message.getSenderId();
+            if (!latestMessages.containsKey(conversationId) ||
+                    message.getTimestamp().getTime() > latestMessages.get(conversationId).getTimestamp().getTime()) {
+                String displaySenderId = message.isOutgoing() ? message.getRecipientId() : message.getSenderId();
+                String displaySenderName = message.isOutgoing() ? getContactName(message.getRecipientId()) : message.getSenderName();
+                String displayContent = message.isOutgoing() ? "me: " + message.getContent() : message.getContent();
+
+                Message updatedMessage = new Message(
+                        message.getId(),
+                        displaySenderId,
+                        displaySenderName,
+                        message.getRecipientId(),
+                        displayContent,
+                        message.getTimestamp(),
+                        message.isOutgoing()
+                );
+                latestMessages.put(conversationId, updatedMessage);
             }
         }
 
         List<Message> groupedMessages = new ArrayList<>(latestMessages.values());
         groupedMessages.sort((m1, m2) -> Long.compare(m2.getTimestamp().getTime(), m1.getTimestamp().getTime()));
-
         return groupedMessages;
     }
 
