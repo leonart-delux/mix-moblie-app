@@ -52,8 +52,14 @@ public class DialFragment extends Fragment {
         textViewSharp.setOnClickListener(this::clickKeypadEvent);
         textViewStar.setOnClickListener(this::clickKeypadEvent);
         imageButtonDelete.setOnClickListener(this::clickKeypadEvent);
+        imageButtonDelete.setOnLongClickListener(this::holdDeleteButton);
 
         return view;
+    }
+
+    private boolean holdDeleteButton(View view) {
+        textViewInput.setText("");
+        return true;
     }
 
     private void clickKeypadEvent(View view) {
