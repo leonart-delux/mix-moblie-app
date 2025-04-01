@@ -191,7 +191,7 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
             return messages;
         }
 
-        Uri uri = Telephony.Sms.CONTENT_URI; // Tải tất cả tin nhắn (Inbox + Sent)
+        Uri uri = Telephony.Sms.CONTENT_URI;
         String selection = Telephony.Sms.DATE + " < ?";
         String[] selectionArgs = new String[]{String.valueOf(maxDate)};
 
@@ -217,11 +217,24 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
                 long date = cursor.getLong(dateIndex);
                 int type = cursor.getInt(typeIndex);
 
-                // Xác định tin nhắn là gửi hay nhận
+                // Chuẩn hóa số chỉ khi không có tên trong danh bạ
+                String normalizedAddress = normalizePhoneNumber(address);
+                String senderName = getContactName(normalizedAddress); // Lấy tên từ số đã chuẩn hóa nếu cần
+
                 boolean isOutgoing = (type == Telephony.Sms.MESSAGE_TYPE_SENT);
-                String senderId = isOutgoing ? "current_user_id" : address;
-                String recipientId = isOutgoing ? address : "current_user_id";
-                String senderName = isOutgoing ? "Me" : getContactName(address);
+                String senderId = isOutgoing ? "current_user_id" : normalizedAddress;
+                String recipientId = isOutgoing ? normalizedAddress : "current_user_id";
+
+                // Nếu là tin nhắn gửi đi và có tên trong danh bạ, giữ nguyên số gốc cho recipientId
+                if (isOutgoing) {
+                    String contactName = getContactName(address);
+                    if (!contactName.equals(address)) {
+                        recipientId = address; // Giữ số gốc nếu có tên
+                        senderName = "Me";
+                    }
+                } else {
+                    senderName = senderName.equals(normalizedAddress) ? normalizedAddress : senderName;
+                }
 
                 Message message = new Message(
                         id,
@@ -285,6 +298,39 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
             }
             cursor.close();
         }
+        return phoneNumber;
+    }
+    private String normalizePhoneNumber(String phoneNumber) {
+        if (phoneNumber == null) return null;
+
+        // Loại bỏ ký tự không cần thiết
+        String cleanedNumber = phoneNumber.replaceAll("[\\s-]", "");
+
+        // Kiểm tra xem có phải số ngắn hoặc tên nhà mạng không
+        if (cleanedNumber.length() < 6 || !cleanedNumber.matches("\\d+")) {
+            // Số ngắn (như 191) hoặc tên (như VIETTEL) -> giữ nguyên
+            return phoneNumber;
+        }
+
+        // Chuẩn hóa và hiện tại chỉ chuẩn hóa cho nội địa VN
+            if (cleanedNumber.startsWith("0")) {
+                return "+84" + cleanedNumber.substring(1);
+            } else if (!cleanedNumber.startsWith("+84")) {
+                return "+84" + cleanedNumber;
+            }
+
+        // Kiểm tra danh bạ
+        String contactName = getContactName(phoneNumber);
+        if (contactName.equals(phoneNumber)) {
+            // Không có tên trong danh bạ -> chuẩn hóa
+            if (cleanedNumber.startsWith("0")) {
+                return "+84" + cleanedNumber.substring(1);
+            } else if (!cleanedNumber.startsWith("+84")) {
+                return "+84" + cleanedNumber;
+            }
+            return cleanedNumber;
+        }
+        // Có tên trong danh bạ -> giữ nguyên
         return phoneNumber;
     }
 
