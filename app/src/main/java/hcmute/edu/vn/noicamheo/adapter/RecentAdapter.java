@@ -5,7 +5,10 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -45,7 +48,7 @@ public class RecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             return new RecentViewHolder(view);
         } else {
             View view = LayoutInflater.from(context).inflate(R.layout.item_header_contact, parent, false);
-            return new ContactHeaderViewHolder(view);
+            return new RecentHeaderViewHolder(view);
         }
     }
 
@@ -58,7 +61,7 @@ public class RecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
         // Check if holder is header item or contact item
         if (getItemViewType(position) == TYPE_HEADER) {
-            ((ContactHeaderViewHolder) holder).textViewHeader.setText(recents.get(position).toString());
+            ((RecentHeaderViewHolder) holder).textViewHeader.setText(recents.get(position).toString());
             return;
         }
 
@@ -132,5 +135,43 @@ public class RecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     @Override
     public int getItemCount() {
         return recents.size();
+    }
+
+    // Represent a header element (day call) in a recent call list
+    private class RecentHeaderViewHolder extends RecyclerView.ViewHolder {
+        TextView textViewHeader;
+
+        public RecentHeaderViewHolder(@NonNull View itemView) {
+            super(itemView);
+            textViewHeader = itemView.findViewById(R.id.textViewHeader);
+        }
+    }
+
+    // Represent an element recent call in the recent call list
+    private class RecentViewHolder extends RecyclerView.ViewHolder {
+        ImageView imageViewCallType;
+        TextView textViewRecentCall;
+        RelativeLayout openPanel;
+        TextView textViewPhone;
+        ImageView imageViewCall;
+        ImageView imageViewMessage;
+        LinearLayout divider;
+        RelativeLayout.LayoutParams params;
+
+        public RecentViewHolder(@NonNull View itemView) {
+            super(itemView);
+            imageViewCallType = itemView.findViewById(R.id.imageViewCallType);
+            textViewRecentCall = itemView.findViewById(R.id.textViewRecentCall);
+            openPanel = itemView.findViewById(R.id.relativeLayoutOpeningPanel);
+            textViewPhone = itemView.findViewById(R.id.textViewPhone);
+            imageViewCall = itemView.findViewById(R.id.imageViewCall);
+            imageViewMessage = itemView.findViewById(R.id.imageViewMessage);
+            divider = itemView.findViewById(R.id.recentItemDivider);
+            params = (RelativeLayout.LayoutParams) divider.getLayoutParams();
+        }
+
+        public RelativeLayout.LayoutParams getDividerParam() {
+            return params;
+        }
     }
 }
