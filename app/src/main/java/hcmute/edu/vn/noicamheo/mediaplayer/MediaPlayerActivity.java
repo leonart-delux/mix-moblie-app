@@ -4,11 +4,13 @@ import android.Manifest;
 import android.content.ContentResolver;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -39,8 +41,8 @@ import hcmute.edu.vn.noicamheo.entity.Song;
 public class MediaPlayerActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private SongAdapter songAdapter;
-    private List<Song> songList = new ArrayList<>(); // Danh sách gốc
-    private List<Song> filteredSongList = new ArrayList<>(); // Danh sách lọc
+    private List<Song> songList = new ArrayList<>();
+    private List<Song> filteredSongList = new ArrayList<>();
     private static final int REQUEST_CODE_PERMISSION = 123;
     private ExoPlayer player;
     private TextView tvSongTitle, tvArtistName;
@@ -51,10 +53,12 @@ public class MediaPlayerActivity extends AppCompatActivity {
     private int currentSongIndex = -1;
     private boolean isRepeat = false;
     private SearchView searchView;
+    private static final String MUSIC_FOLDER = "/storage/emulated/0/Music/"; // Thư mục mặc định trên emulator
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d("MediaPlayer", "onCreate called");
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_mediaplay);
 
@@ -111,7 +115,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
         });
 
         if (checkPermission()) {
-            loadSongs();
+            scanAndLoadSongs();
         } else {
             requestPermission();
         }
@@ -139,6 +143,15 @@ public class MediaPlayerActivity extends AppCompatActivity {
         });
     }
 
+    private void scanAndLoadSongs() {
+        Log.d("MediaPlayer", "Scanning folder: " + MUSIC_FOLDER);
+        MediaScannerConnection.scanFile(this, new String[]{MUSIC_FOLDER}, null,
+                (path, uri) -> {
+                    Log.d("MediaScanner", "Scan completed for path: " + path + ", URI: " + uri);
+                    handler.postDelayed(this::loadSongs, 50);
+                });
+    }
+
     private boolean checkPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED;
@@ -159,7 +172,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_CODE_PERMISSION && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            loadSongs();
+            scanAndLoadSongs();
         } else {
             Toast.makeText(this, "Permission denied, cannot load songs", Toast.LENGTH_SHORT).show();
         }
@@ -182,23 +195,26 @@ public class MediaPlayerActivity extends AppCompatActivity {
 
         Cursor cursor = contentResolver.query(uri, projection, selection, null, sortOrder);
 
-        if (cursor != null && cursor.moveToFirst()) {
-            int titleColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-            int artistColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
-            int pathColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATA);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                int titleColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
+                int artistColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
+                int pathColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATA);
 
-            do {
-                String title = cursor.getString(titleColumn);
-                String artist = cursor.getString(artistColumn);
-                String path = cursor.getString(pathColumn);
+                do {
+                    String title = cursor.getString(titleColumn);
+                    String artist = cursor.getString(artistColumn);
+                    String path = cursor.getString(pathColumn);
 
-                if (path != null && path.endsWith(".mp3")) {
-                    Song song = new Song(title, artist, path);
-                    songList.add(song);
-                    filteredSongList.add(song); // Thêm vào cả hai danh sách
-                }
-            } while (cursor.moveToNext());
-
+                    if (path != null && path.endsWith(".mp3")) {
+                        Song song = new Song(title, artist, path);
+                        songList.add(song);
+                        filteredSongList.add(song);
+                    }
+                } while (cursor.moveToNext());
+            } else {
+                Log.d("MediaPlayer", "Cursor is empty, no songs found");
+            }
             cursor.close();
         } else {
             Toast.makeText(this, "No MP3 files found", Toast.LENGTH_SHORT).show();
