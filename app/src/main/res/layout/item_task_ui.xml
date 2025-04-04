@@ -85,32 +85,40 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
+                    android:layout_marginEnd="25dp"
+                    android:layout_marginTop="10dp"
                     android:layout_weight="1"
-                    android:singleLine="true"
+                    android:breakStrategy="high_quality"
+                    android:ellipsize="none"
+                    android:maxLines="3"
                     android:textColor="@android:color/black"
-                    android:textSize="20sp"
+                    android:textSize="16sp"
                     android:textStyle="bold"
-                    tools:text="Mobile Programing" />
+                    tools:text="Mobile Programming" />
+
 
                 <ImageView
                     android:id="@+id/imageView5"
-                    android:layout_width="wrap_content"
-                    android:layout_height="28dp"
-                    android:layout_marginEnd="-35dp"
-                    android:layout_weight="1"/>
+                    android:layout_width="17dp"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="13dp"
+                    android:layout_marginEnd="3dp"
+                    android:background="@drawable/dot32" />
 
             </LinearLayout>
 
             <TextView
                 android:id="@+id/description"
-                android:layout_width="match_parent"
+                android:layout_width="185dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="-25dp"
                 android:alpha="0.5"
-                android:layout_marginTop="-70dp"
+                android:ellipsize="none"
+                android:maxLines="3"
                 android:singleLine="true"
                 android:textColor="@android:color/black"
-                android:textSize="15sp"
-                android:layout_marginStart="10dp"
+                android:textSize="12sp"
                 tools:text="Mobile Programing - F1.401" />
 
             <TextView
@@ -118,15 +126,26 @@
                 android:layout_width="wrap_content"
                 android:layout_height="35dp"
                 android:layout_gravity="right"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="-27dp"
                 android:paddingLeft="10dp"
                 android:paddingTop="10dp"
                 android:paddingRight="10dp"
                 android:paddingBottom="5dp"
-                android:textStyle="bold"
-                android:textColor="@color/colorAccent"
                 android:text="COMPLETED"
-                android:textSize="15sp" />
+                android:textColor="@color/colorAccent"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/time"
+                android:layout_width="87dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="-45dp"
+                android:textColor="@color/colorAccent"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:text="Time" />
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

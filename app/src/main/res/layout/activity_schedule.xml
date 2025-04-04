@@ -5,10 +5,11 @@
     android:id="@+id/main_schedule_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ScheduleActivity">
+    tools:context="activity.ScheduleActivity">
 
 
     <FrameLayout
+        android:id="@+id/frameLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent">
@@ -20,22 +21,23 @@
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
+                android:layout_height="51dp"
                 android:layout_marginStart="20dp"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="40dp"
                 android:layout_marginEnd="20dp"
                 android:background="@drawable/background_headingtitle">
 
 
-                <ImageView
-                    android:id="@+id/imageView2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="24dp"
+                <Button
+                    android:id="@+id/btnShowCalendar"
+                    android:layout_width="69dp"
+                    android:layout_height="46dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="@android:color/transparent"
+                    android:drawableTop="@drawable/schedule32"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:srcCompat="@drawable/schedule1" />
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <TextView
                     android:id="@+id/textView"
@@ -43,7 +45,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="32dp"
                     android:fontFamily="sans-serif-black"
-                    android:text="Task"
+                    android:text="Schedule"
                     android:textColor="@color/black"
                     android:textSize="20dp"
                     android:textStyle="bold"
@@ -53,35 +55,52 @@
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
+            <TextView
+                android:id="@+id/textView6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-black"
+                android:layout_marginStart="25dp"
+                android:textSize="25dp"
+                android:textColor="@color/colorAccent"
+                android:layout_marginTop="20dp"
+                android:text="All tasks" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
+                android:layout_marginStart="25dp"
                 android:layout_marginTop="30dp"
-                android:layout_marginEnd="20dp"
+                android:layout_marginEnd="25dp"
                 android:orientation="vertical">
 
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content" >
+                    android:layout_height="wrap_content"
+                    android:id="@+id/recyclerview">
 
                 </androidx.recyclerview.widget.RecyclerView>
 
             </LinearLayout>
 
-            <Button
-                android:id="@+id/button"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="80dp"
-                android:layout_marginTop="300dp"
-                android:layout_marginEnd="80dp"
-                android:backgroundTint="#1C90ED"
-                android:fontFamily="sans-serif-black"
-                android:text="+ Add Task"
-                android:textStyle="bold" />
-
         </LinearLayout>
+
     </FrameLayout>
+
+    <Button
+        android:id="@+id/buttonaddtask"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#1C90ED"
+        android:fontFamily="sans-serif-black"
+        android:layout_marginStart="30dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="30dp"
+        android:text="+ Add Task"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/frameLayout"
+        tools:layout_editor_absoluteX="30dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
