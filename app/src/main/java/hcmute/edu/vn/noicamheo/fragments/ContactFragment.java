@@ -30,7 +30,7 @@ import hcmute.edu.vn.noicamheo.entity.Contact;
 
 public class ContactFragment extends Fragment {
     RecyclerView recyclerViewContact;
-    private static final int REQUEST_CODE_CONTACT = 1;      // Code to request permission
+    private static final int REQUEST_CODE_CONTACT = 101;      // Code to request permission
     private final List<Object> contacts = new ArrayList<>();
 
     @Override
@@ -59,52 +59,36 @@ public class ContactFragment extends Fragment {
     }
 
     private List<Object> loadContacts() {
-        // Retrieve data from contact provider
-        Cursor cursor = requireActivity().getContentResolver().query(
-                ContactsContract.Contacts.CONTENT_URI,
-                null,
-                null,
-                null,
-                "display_name COLLATE NOCASE ASC"
-        );
-
-        // Load data from cursor
         List<Object> contacts = new ArrayList<>();
 
-        if (cursor != null && cursor.getCount() > 0) {
-            int nameColumnIndex = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME);
-            int idColumnIndex = cursor.getColumnIndex(ContactsContract.Contacts._ID);
+        // Load only display name and phone number
+        Cursor cursor = requireActivity().getContentResolver().query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                new String[]{
+                        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                        ContactsContract.CommonDataKinds.Phone.NUMBER
+                },
+                null,
+                null,
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " COLLATE NOCASE ASC"
+        );
+
+        // Resolve data from cursor
+        if (cursor != null) {
+            // Get index column of name and phone in cursor
+            int nameIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
+            int phoneIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+
+            // Load data from each record
             while (cursor.moveToNext()) {
-                // Get name of contact
-                String contactName = cursor.getString(nameColumnIndex);
-
-                // Get phone of contact
-                String contactId = cursor.getString(idColumnIndex);
-                String contactPhone;
-
-                Cursor phoneCursor = requireActivity().getContentResolver().query(
-                        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                        null,
-                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-                        new String[]{contactId},
-                        null
-                );
-
-                if (phoneCursor != null && phoneCursor.getCount() > 0) {
-                    phoneCursor.moveToFirst();
-                    int phoneColumnIndex = phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
-                    contactPhone = phoneCursor.getString(phoneColumnIndex);
-                    phoneCursor.close();
-                } else {
-                    contactPhone = "";
-                }
-
-                // Add contact into contact list
-                contacts.add(new Contact(contactName, contactPhone));
+                String name = cursor.getString(nameIndex);
+                String phone = cursor.getString(phoneIndex);
+                contacts.add(new Contact(name, phone));
             }
+
+            cursor.close();
         }
 
-        // Return new data
         return contacts;
     }
 
