@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -46,14 +47,15 @@ public class MediaPlayerActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_PERMISSION = 123;
     private ExoPlayer player;
     private TextView tvSongTitle, tvArtistName;
-    private ImageButton btnPlayPause, btnPrevious, btnNext, btnRepeat;
+    private ImageButton btnPlayPause, btnPrevious, btnNext, btnRepeat, btnShuffle;
     private SeekBar seekBar;
     private TextView tvCurrentTime, tvTotalTime;
     private Handler handler = new Handler();
     private int currentSongIndex = -1;
     private boolean isRepeat = false;
+    private boolean isShuffle = false;
     private SearchView searchView;
-    private static final String MUSIC_FOLDER = "/storage/emulated/0/Music/"; // Thư mục mặc định trên emulator
+    private static final String MUSIC_FOLDER = "/storage/emulated/0/Music/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +78,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
         btnPrevious = findViewById(R.id.btn_previous);
         btnNext = findViewById(R.id.btn_next);
         btnRepeat = findViewById(R.id.btn_repeat);
+        btnShuffle = findViewById(R.id.btn_shuffle);
         seekBar = findViewById(R.id.seek_bar);
         tvCurrentTime = findViewById(R.id.tv_current_time);
         tvTotalTime = findViewById(R.id.tv_total_time);
@@ -83,6 +86,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
         searchView.setQueryHint("Search");
 
         btnRepeat.setImageResource(R.drawable.ic_repeat);
+        btnShuffle.setImageResource(R.drawable.ic_shuffle);
 
         player = new ExoPlayer.Builder(this).build();
         player.addListener(new Player.Listener() {
@@ -128,19 +132,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
         btnPrevious.setOnClickListener(v -> playPreviousSong());
         btnNext.setOnClickListener(v -> playNextSong());
         btnRepeat.setOnClickListener(v -> repeatSong());
-
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                filterSongs(newText);
-                return true;
-            }
-        });
+        btnShuffle.setOnClickListener(v -> toggleShuffle());
     }
 
     private void scanAndLoadSongs() {
@@ -148,7 +140,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
         MediaScannerConnection.scanFile(this, new String[]{MUSIC_FOLDER}, null,
                 (path, uri) -> {
                     Log.d("MediaScanner", "Scan completed for path: " + path + ", URI: " + uri);
-                    handler.postDelayed(this::loadSongs, 50);
+                    handler.postDelayed(this::loadSongs, 500);
                 });
     }
 
@@ -179,6 +171,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
     }
 
     private void loadSongs() {
+        Log.d("MediaPlayer", "Starting to load songs...");
         songList.clear();
         filteredSongList.clear();
         ContentResolver contentResolver = getContentResolver();
@@ -196,6 +189,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
         Cursor cursor = contentResolver.query(uri, projection, selection, null, sortOrder);
 
         if (cursor != null) {
+            Log.d("MediaPlayer", "Cursor is not null, processing songs...");
             if (cursor.moveToFirst()) {
                 int titleColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
                 int artistColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
@@ -205,6 +199,8 @@ public class MediaPlayerActivity extends AppCompatActivity {
                     String title = cursor.getString(titleColumn);
                     String artist = cursor.getString(artistColumn);
                     String path = cursor.getString(pathColumn);
+
+                    Log.d("SongPath", "Found path: " + path);
 
                     if (path != null && path.endsWith(".mp3")) {
                         Song song = new Song(title, artist, path);
@@ -217,11 +213,35 @@ public class MediaPlayerActivity extends AppCompatActivity {
             }
             cursor.close();
         } else {
+            Log.d("MediaPlayer", "Cursor is null, no songs found in MediaStore");
             Toast.makeText(this, "No MP3 files found", Toast.LENGTH_SHORT).show();
         }
 
         if (songAdapter != null) {
             songAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void toggleShuffle() {
+        if (songList.isEmpty()) {
+            Toast.makeText(this, "No songs available to shuffle", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        isShuffle = !isShuffle;
+        if (isShuffle) {
+            Collections.shuffle(songList);
+            btnShuffle.setColorFilter(ContextCompat.getColor(this, android.R.color.darker_gray));
+            Log.d("MediaPlayer", "Shuffle mode ON");
+        } else {
+            loadSongs();
+            btnShuffle.clearColorFilter();
+            Log.d("MediaPlayer", "Shuffle mode OFF");
+        }
+
+        if (player.isPlaying()) {
+            Song currentSong = filteredSongList.get(currentSongIndex);
+            currentSongIndex = songList.indexOf(currentSong);
         }
     }
 
