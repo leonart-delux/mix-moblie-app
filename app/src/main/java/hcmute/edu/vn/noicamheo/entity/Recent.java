@@ -1,16 +1,23 @@
 package hcmute.edu.vn.noicamheo.entity;
 
+import java.util.Date;
+
 public class Recent {
     private String fullName;
     private String phoneNumber;
     private ERecentCallType eRecentCallType;
     private boolean isInContact;
+    private Date date;
 
-    public Recent(String fullName, String phoneNumber, ERecentCallType eRecentCallType, boolean isInContact) {
+    private int duration;
+
+    public Recent(String fullName, String phoneNumber, ERecentCallType eRecentCallType, boolean isInContact, Date date, int duration) {
         this.fullName = fullName;
         this.phoneNumber = phoneNumber;
         this.eRecentCallType = eRecentCallType;
         this.isInContact = isInContact;
+        this.date = date;
+        this.duration = duration;
     }
 
     public String getFullName() {
@@ -43,5 +50,22 @@ public class Recent {
 
     public void setInContact(boolean inContact) {
         isInContact = inContact;
+    }
+
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public int getDuration() {
+        return duration;
     }
 }
