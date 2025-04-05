@@ -75,6 +75,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
                 long currentPosition = intent.getLongExtra(MediaPlayerService.EXTRA_CURRENT_POSITION, 0);
                 long duration = intent.getLongExtra(MediaPlayerService.EXTRA_DURATION, 0);
 
+                // Cập nhật UI dựa trên broadcast
                 if (currentSongIndex >= 0 && currentSongIndex < songList.size()) {
                     Song currentSong = songList.get(currentSongIndex);
                     tvSongTitle.setText(currentSong.getTitle());
@@ -85,6 +86,13 @@ public class MediaPlayerActivity extends AppCompatActivity {
                 seekBar.setProgress((int) currentPosition);
                 tvCurrentTime.setText(formatTime((int) currentPosition));
                 tvTotalTime.setText(formatTime((int) duration));
+
+                // Bắt đầu hoặc dừng cập nhật SeekBar dựa trên trạng thái phát
+                if (isPlaying) {
+                    handler.post(updateSeekBar);
+                } else {
+                    handler.removeCallbacks(updateSeekBar);
+                }
 
                 Log.d(TAG, "Received broadcast: currentSongIndex=" + currentSongIndex + ", isPlaying=" + isPlaying);
             }
@@ -198,7 +206,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
         super.onResume();
         Log.d(TAG, "onResume called");
         if (serviceBound) {
-            handler.post(updateSeekBar);
+            handler.post(updateSeekBar); // Bắt đầu cập nhật SeekBar khi activity được khôi phục
         }
     }
 
@@ -206,7 +214,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "onPause called");
-        handler.removeCallbacks(updateSeekBar);
+        handler.removeCallbacks(updateSeekBar); // Dừng cập nhật SeekBar khi activity không hoạt động
     }
 
     @Override
@@ -446,7 +454,11 @@ public class MediaPlayerActivity extends AppCompatActivity {
         @Override
         public void run() {
             if (serviceBound && mediaPlayerService.getPlayer() != null) {
-                handler.postDelayed(this, 500);
+                // Cập nhật SeekBar và thời gian hiện tại
+                int currentPosition = (int) mediaPlayerService.getPlayer().getCurrentPosition();
+                seekBar.setProgress(currentPosition);
+                tvCurrentTime.setText(formatTime(currentPosition));
+                handler.postDelayed(this, 500); // Cập nhật mỗi 500ms
             }
         }
     };
