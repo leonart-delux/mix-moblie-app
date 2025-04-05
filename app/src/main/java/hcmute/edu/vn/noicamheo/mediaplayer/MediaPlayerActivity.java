@@ -75,19 +75,20 @@ public class MediaPlayerActivity extends AppCompatActivity {
                 long currentPosition = intent.getLongExtra(MediaPlayerService.EXTRA_CURRENT_POSITION, 0);
                 long duration = intent.getLongExtra(MediaPlayerService.EXTRA_DURATION, 0);
 
-                // Cập nhật UI dựa trên broadcast
                 if (currentSongIndex >= 0 && currentSongIndex < songList.size()) {
                     Song currentSong = songList.get(currentSongIndex);
                     tvSongTitle.setText(currentSong.getTitle());
                     tvArtistName.setText(currentSong.getArtist());
                 }
+
                 btnPlayPause.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
+                Log.d(TAG, "Updated play/pause button based on broadcast: isPlaying=" + isPlaying);
+
                 seekBar.setMax((int) duration);
                 seekBar.setProgress((int) currentPosition);
                 tvCurrentTime.setText(formatTime((int) currentPosition));
                 tvTotalTime.setText(formatTime((int) duration));
 
-                // Bắt đầu hoặc dừng cập nhật SeekBar dựa trên trạng thái phát
                 if (isPlaying) {
                     handler.post(updateSeekBar);
                 } else {

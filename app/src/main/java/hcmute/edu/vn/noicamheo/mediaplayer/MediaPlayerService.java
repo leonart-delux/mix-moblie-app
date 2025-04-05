@@ -50,6 +50,8 @@ public class MediaPlayerService extends MediaSessionService {
     public static final String EXTRA_IS_PLAYING = "is_playing";
     public static final String EXTRA_CURRENT_POSITION = "current_position";
     public static final String EXTRA_DURATION = "duration";
+    public static final String EXTRA_IS_REPEAT = "is_repeat";
+    public static final String EXTRA_IS_SHUFFLE = "is_shuffle";
 
     @Override
     public void onCreate() {
@@ -64,8 +66,17 @@ public class MediaPlayerService extends MediaSessionService {
                 if (state == Player.STATE_ENDED) {
                     if (!isRepeat) {
                         playNextSong();
+                    } else {
+                        sendPlaybackStateBroadcast();
                     }
+                } else {
+                    updateNotification();
+                    sendPlaybackStateBroadcast();
                 }
+            }
+
+            @Override
+            public void onIsPlayingChanged(boolean isPlaying) {
                 updateNotification();
                 sendPlaybackStateBroadcast();
             }
@@ -88,18 +99,23 @@ public class MediaPlayerService extends MediaSessionService {
             switch (action) {
                 case "PLAY_PAUSE":
                     togglePlayPause();
+                    sendPlaybackStateBroadcast();
                     break;
                 case "NEXT":
                     playNextSong();
+                    sendPlaybackStateBroadcast();
                     break;
                 case "PREVIOUS":
                     playPreviousSong();
+                    sendPlaybackStateBroadcast();
                     break;
                 case "SHUFFLE":
                     toggleShuffle();
+                    sendPlaybackStateBroadcast();
                     break;
                 case "REPEAT":
                     toggleRepeat();
+                    sendPlaybackStateBroadcast();
                     break;
             }
         }
@@ -168,7 +184,7 @@ public class MediaPlayerService extends MediaSessionService {
                 Log.d(TAG, "Player resumed");
                 startForeground(NOTIFICATION_ID, createNotification());
             }
-            sendPlaybackStateBroadcast(); // Gửi broadcast
+            sendPlaybackStateBroadcast();
         } catch (Exception e) {
             Log.e(TAG, "Error toggling play/pause", e);
         }
@@ -209,7 +225,7 @@ public class MediaPlayerService extends MediaSessionService {
         player.setRepeatMode(isRepeat ? Player.REPEAT_MODE_ONE : Player.REPEAT_MODE_OFF);
         Log.d(TAG, "Repeat mode set to: " + isRepeat);
         updateNotification();
-        sendPlaybackStateBroadcast(); // Gửi broadcast
+        sendPlaybackStateBroadcast();
     }
 
     public void setShuffle(boolean shuffle) {
@@ -220,7 +236,7 @@ public class MediaPlayerService extends MediaSessionService {
             Collections.shuffle(shuffledSongList);
         }
         updateNotification();
-        sendPlaybackStateBroadcast(); // Gửi broadcast
+        sendPlaybackStateBroadcast();
     }
 
     private void toggleShuffle() {
@@ -291,8 +307,13 @@ public class MediaPlayerService extends MediaSessionService {
         intent.putExtra(EXTRA_IS_PLAYING, player.isPlaying());
         intent.putExtra(EXTRA_CURRENT_POSITION, player.getCurrentPosition());
         intent.putExtra(EXTRA_DURATION, player.getDuration());
+        intent.putExtra(EXTRA_IS_REPEAT, isRepeat);
+        intent.putExtra(EXTRA_IS_SHUFFLE, isShuffle);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-        Log.d(TAG, "Broadcast sent: currentSongIndex=" + currentSongIndex + ", isPlaying=" + player.isPlaying());
+        Log.d(TAG, "Broadcast sent: currentSongIndex=" + currentSongIndex +
+                ", isPlaying=" + player.isPlaying() +
+                ", isRepeat=" + isRepeat +
+                ", isShuffle=" + isShuffle);
     }
 
     @Override
