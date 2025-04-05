@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Quyền rung khi báo thức kêu -->
     <uses-permission android:name="android.permission.VIBRATE" />
+<!--    Quyền hiển thị thông báo-->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+
 
     <application
         android:allowBackup="true"
@@ -79,9 +82,20 @@
         <activity android:name=".AlarmActivity" android:exported="true"/>
 
         <receiver android:name=".broadcastReceiver.AlarmBroadcastReceiver"
+            android:enabled="true"
             android:exported="false">
 
         </receiver>
+        <receiver android:name=".broadcastReceiver.BootBroadcastReceiver" android:enabled="true" android:exported="false" android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+        <service android:name=".service.AlarmService"
+            android:enabled="true"
+            android:exported="false"/>
     </application>
 
 </manifest>

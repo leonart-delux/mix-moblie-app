@@ -26,7 +26,6 @@ import hcmute.edu.vn.noicamheo.broadcastReceiver.AlarmBroadcastReceiver;
 import hcmute.edu.vn.noicamheo.database.DatabaseHelper;
 import hcmute.edu.vn.noicamheo.entity.Task;
 
-
 public class ScheduleAddTask extends AppCompatActivity {
 
     private EditText addTaskTitle, addTaskDescription, addTaskDate, addTaskTime;
@@ -78,9 +77,15 @@ public class ScheduleAddTask extends AppCompatActivity {
 
             String formattedDate = dayOfWeek + " " + day + " " + monthName;  // "Fri 22 Mar"
             addTaskDate.setText(formattedDate);
+
+            // Kiểm tra xem ngày có phải là ngày trong quá khứ không
+            if (isDateInPast(myCalendar)) {
+                Toast.makeText(ScheduleAddTask.this, "Không thể chọn ngày trong quá khứ!", Toast.LENGTH_SHORT).show();
+                return; // Dừng lại nếu chọn ngày trong quá khứ
+            }
+
         }, myCalendar.get(Calendar.YEAR), myCalendar.get(Calendar.MONTH), myCalendar.get(Calendar.DAY_OF_MONTH)).show();
     }
-
 
     private void showTimePicker() {
         Calendar myCalendar = Calendar.getInstance();
@@ -137,7 +142,7 @@ public class ScheduleAddTask extends AppCompatActivity {
         }
 
         // Kiểm tra xem ngày đã chọn có nằm trong quá khứ không
-        if (isDateInPast(date, time, selectedDate)) {
+        if (isDateInPast(selectedDate)) {
             Toast.makeText(this, "Không thể đặt lịch trong quá khứ!", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -166,9 +171,7 @@ public class ScheduleAddTask extends AppCompatActivity {
         finish();
     }
 
-
-
-    private boolean isDateInPast(String date, String time, Calendar selectedDate) {
+    private boolean isDateInPast(Calendar selectedDate) {
         Calendar today = Calendar.getInstance();
         today.set(Calendar.HOUR_OF_DAY, 0);
         today.set(Calendar.MINUTE, 0);
@@ -180,7 +183,6 @@ public class ScheduleAddTask extends AppCompatActivity {
         }
         return false;
     }
-
 
     private void setOrScheduleAlarm(long taskId, String title, String description, String date, String time, Long timeInMillis) {
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
@@ -207,7 +209,7 @@ public class ScheduleAddTask extends AppCompatActivity {
 
         timeInMillis = calendar.getTimeInMillis();
 
-        if (isDateInPast(date, time, calendar)) {
+        if (isDateInPast(calendar)) {
             Toast.makeText(this, "Không thể đặt lịch trong quá khứ!", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -231,25 +233,10 @@ public class ScheduleAddTask extends AppCompatActivity {
         }
     }
 
-
-
-
-
-
-
-    /**
-     * 🕒 Đặt báo thức để hiển thị thông báo khi đến giờ task
-     */
-
-
     @TargetApi(Build.VERSION_CODES.S)
     private void requestExactAlarmPermission() {
         Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
         intent.setData(Uri.parse("package:" + getPackageName()));
         startActivity(intent);
     }
-
-
-
-
 }

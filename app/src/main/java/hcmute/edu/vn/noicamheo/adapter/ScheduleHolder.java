@@ -2,6 +2,7 @@ package hcmute.edu.vn.noicamheo.adapter;
 
 
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -12,7 +13,7 @@ import hcmute.edu.vn.noicamheo.R;
 public class ScheduleHolder extends RecyclerView.ViewHolder {
 
     public TextView dateView, dayView, monthView, titleView, timeview, descriptionView, completeButton;
-    public ImageView optionsMenu; // ImageView để mở menu
+    public Button optionsMenu; // ImageView để mở menu
     private OnMenuClickListener listener;
 
     public ScheduleHolder(@NonNull View itemView) {
@@ -24,7 +25,7 @@ public class ScheduleHolder extends RecyclerView.ViewHolder {
         titleView = itemView.findViewById(R.id.title);
         timeview = itemView.findViewById(R.id.time);
         descriptionView = itemView.findViewById(R.id.description);
-        optionsMenu = itemView.findViewById(R.id.imageView5); // Ánh xạ ImageView
+        optionsMenu = itemView.findViewById(R.id.buttonoption); // Ánh xạ ImageView
         completeButton = itemView.findViewById(R.id.status);
 
         // Bắt sự kiện nhấn vào ImageView để hiển thị Popup Menu
