@@ -74,9 +74,34 @@ public class MediaPlayerActivity extends AppCompatActivity {
                 boolean isPlaying = intent.getBooleanExtra(MediaPlayerService.EXTRA_IS_PLAYING, false);
                 long currentPosition = intent.getLongExtra(MediaPlayerService.EXTRA_CURRENT_POSITION, 0);
                 long duration = intent.getLongExtra(MediaPlayerService.EXTRA_DURATION, 0);
+                boolean receivedIsRepeat = intent.getBooleanExtra(MediaPlayerService.EXTRA_IS_REPEAT, false);
+                boolean receivedIsShuffle = intent.getBooleanExtra(MediaPlayerService.EXTRA_IS_SHUFFLE, false);
 
-                if (currentSongIndex >= 0 && currentSongIndex < songList.size()) {
-                    Song currentSong = songList.get(currentSongIndex);
+                if (isRepeat != receivedIsRepeat) {
+                    isRepeat = receivedIsRepeat;
+                    btnRepeat.setImageResource(isRepeat ? R.drawable.ic_repeat_on : R.drawable.ic_repeat);
+                }
+
+                if (isShuffle != receivedIsShuffle) {
+                    isShuffle = receivedIsShuffle;
+                    btnShuffle.setImageResource(isShuffle ? R.drawable.ic_shuffle_on : R.drawable.ic_shuffle);
+                }
+
+                if (currentSongIndex >= 0) {
+                    Song currentSong;
+                    if (isShuffle && mediaPlayerService != null) {
+                        List<Song> activeList = mediaPlayerService.getActiveList();
+                        if (currentSongIndex < activeList.size()) {
+                            currentSong = activeList.get(currentSongIndex);
+                        } else {
+                            return;
+                        }
+                    } else if (currentSongIndex < songList.size()) {
+                        currentSong = songList.get(currentSongIndex);
+                    } else {
+                        return;
+                    }
+
                     tvSongTitle.setText(currentSong.getTitle());
                     tvArtistName.setText(currentSong.getArtist());
                 }
@@ -128,7 +153,6 @@ public class MediaPlayerActivity extends AppCompatActivity {
         Intent intent = new Intent(this, MediaPlayerService.class);
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
 
-        // Đăng ký BroadcastReceiver
         LocalBroadcastManager.getInstance(this).registerReceiver(playbackStateReceiver,
                 new IntentFilter(MediaPlayerService.ACTION_PLAYBACK_STATE_CHANGED));
 
@@ -207,7 +231,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
         super.onResume();
         Log.d(TAG, "onResume called");
         if (serviceBound) {
-            handler.post(updateSeekBar); // Bắt đầu cập nhật SeekBar khi activity được khôi phục
+            handler.post(updateSeekBar);
         }
     }
 
@@ -215,7 +239,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "onPause called");
-        handler.removeCallbacks(updateSeekBar); // Dừng cập nhật SeekBar khi activity không hoạt động
+        handler.removeCallbacks(updateSeekBar);
     }
 
     @Override
@@ -348,15 +372,32 @@ public class MediaPlayerActivity extends AppCompatActivity {
             return;
         }
 
+        Song currentSong = null;
+        if (serviceBound && mediaPlayerService.getPlayer() != null &&
+                mediaPlayerService.getPlayer().isPlaying() && currentSongIndex >= 0 &&
+                currentSongIndex < songList.size()) {
+            currentSong = songList.get(currentSongIndex);
+        }
+
         isShuffle = !isShuffle;
         if (serviceBound) {
             mediaPlayerService.setShuffle(isShuffle);
             if (isShuffle) {
-                btnShuffle.setColorFilter(ContextCompat.getColor(this, android.R.color.darker_gray));
+                btnShuffle.setImageResource(R.drawable.ic_shuffle_on);
                 Log.d(TAG, "Shuffle mode ON");
             } else {
-                btnShuffle.clearColorFilter();
+                btnShuffle.setImageResource(R.drawable.ic_shuffle);
                 Log.d(TAG, "Shuffle mode OFF");
+            }
+
+            if (currentSong != null) {
+                List<Song> activeList = mediaPlayerService.getActiveList();
+                for (int i = 0; i < activeList.size(); i++) {
+                    if (activeList.get(i).getPath().equals(currentSong.getPath())) {
+                        currentSongIndex = i;
+                        break;
+                    }
+                }
             }
         } else {
             Log.w(TAG, "Service not bound, cannot toggle shuffle");
@@ -383,7 +424,23 @@ public class MediaPlayerActivity extends AppCompatActivity {
         Log.d(TAG, "Attempting to play song: " + song.getTitle());
         if (serviceBound) {
             try {
-                currentSongIndex = songList.indexOf(song);
+                // Find the song in the active list (which could be shuffled)
+                List<Song> activeList = mediaPlayerService.getActiveList();
+                int indexInActiveList = -1;
+
+                for (int i = 0; i < activeList.size(); i++) {
+                    if (activeList.get(i).getPath().equals(song.getPath())) {
+                        indexInActiveList = i;
+                        break;
+                    }
+                }
+
+                if (indexInActiveList != -1) {
+                    currentSongIndex = indexInActiveList;
+                } else {
+                    currentSongIndex = songList.indexOf(song);
+                }
+
                 Log.d(TAG, "Current song index: " + currentSongIndex);
                 mediaPlayerService.playSong(currentSongIndex);
                 Log.d(TAG, "Song played successfully: " + song.getTitle());
@@ -441,9 +498,9 @@ public class MediaPlayerActivity extends AppCompatActivity {
         if (serviceBound) {
             mediaPlayerService.setRepeat(isRepeat);
             if (isRepeat) {
-                btnRepeat.setColorFilter(ContextCompat.getColor(this, android.R.color.darker_gray));
+                btnRepeat.setImageResource(R.drawable.ic_repeat_on);
             } else {
-                btnRepeat.clearColorFilter();
+                btnRepeat.setImageResource(R.drawable.ic_repeat);
             }
             Log.d(TAG, "Repeat mode set to: " + isRepeat);
         } else {
@@ -455,11 +512,10 @@ public class MediaPlayerActivity extends AppCompatActivity {
         @Override
         public void run() {
             if (serviceBound && mediaPlayerService.getPlayer() != null) {
-                // Cập nhật SeekBar và thời gian hiện tại
                 int currentPosition = (int) mediaPlayerService.getPlayer().getCurrentPosition();
                 seekBar.setProgress(currentPosition);
                 tvCurrentTime.setText(formatTime(currentPosition));
-                handler.postDelayed(this, 500); // Cập nhật mỗi 500ms
+                handler.postDelayed(this, 500);
             }
         }
     };

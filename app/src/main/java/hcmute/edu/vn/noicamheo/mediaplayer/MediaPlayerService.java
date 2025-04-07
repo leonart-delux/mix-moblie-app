@@ -4,21 +4,24 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
+import android.widget.RemoteViews;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.MediaItem;
-import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
+import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.session.MediaSession;
 import androidx.media3.session.MediaSessionService;
@@ -26,6 +29,7 @@ import androidx.media3.session.MediaSessionService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import hcmute.edu.vn.noicamheo.R;
 import hcmute.edu.vn.noicamheo.entity.Song;
@@ -43,6 +47,16 @@ public class MediaPlayerService extends MediaSessionService {
 
     private static final int NOTIFICATION_ID = 1;
     private static final String CHANNEL_ID = "MediaPlayerServiceChannel";
+
+    // Handler for updating notification progress
+    private final Handler progressHandler = new Handler(Looper.getMainLooper());
+    private final Runnable progressRunnable = new Runnable() {
+        @Override
+        public void run() {
+            updateNotification();
+            progressHandler.postDelayed(this, 1000);
+        }
+    };
 
     // Broadcast actions
     public static final String ACTION_PLAYBACK_STATE_CHANGED = "hcmute.edu.vn.noicamheo.ACTION_PLAYBACK_STATE_CHANGED";
@@ -67,6 +81,9 @@ public class MediaPlayerService extends MediaSessionService {
                     if (!isRepeat) {
                         playNextSong();
                     } else {
+                        // Replay the current song
+                        player.seekTo(0);
+                        player.play();
                         sendPlaybackStateBroadcast();
                     }
                 } else {
@@ -77,6 +94,13 @@ public class MediaPlayerService extends MediaSessionService {
 
             @Override
             public void onIsPlayingChanged(boolean isPlaying) {
+                if (isPlaying) {
+                    // Start progress updates when playing
+                    progressHandler.post(progressRunnable);
+                } else {
+                    // Stop progress updates when paused
+                    progressHandler.removeCallbacks(progressRunnable);
+                }
                 updateNotification();
                 sendPlaybackStateBroadcast();
             }
@@ -99,23 +123,18 @@ public class MediaPlayerService extends MediaSessionService {
             switch (action) {
                 case "PLAY_PAUSE":
                     togglePlayPause();
-                    sendPlaybackStateBroadcast();
                     break;
                 case "NEXT":
                     playNextSong();
-                    sendPlaybackStateBroadcast();
                     break;
                 case "PREVIOUS":
                     playPreviousSong();
-                    sendPlaybackStateBroadcast();
                     break;
                 case "SHUFFLE":
                     toggleShuffle();
-                    sendPlaybackStateBroadcast();
                     break;
                 case "REPEAT":
                     toggleRepeat();
-                    sendPlaybackStateBroadcast();
                     break;
             }
         }
@@ -152,23 +171,37 @@ public class MediaPlayerService extends MediaSessionService {
 
     public void playSong(int index) {
         Log.d(TAG, "Attempting to play song at index: " + index);
-        if (index >= 0 && index < (isShuffle ? shuffledSongList : songList).size()) {
+        List<Song> activeList = isShuffle ? shuffledSongList : songList;
+
+        if (index >= 0 && index < activeList.size()) {
             try {
                 currentSongIndex = index;
-                List<Song> activeList = isShuffle ? shuffledSongList : songList;
-                MediaItem mediaItem = MediaItem.fromUri(activeList.get(index).getPath());
+                Song currentSong = activeList.get(index);
+
+                MediaItem mediaItem = new MediaItem.Builder()
+                        .setUri(currentSong.getPath())
+                        .setMediaMetadata(new MediaMetadata.Builder()
+                                .setTitle(currentSong.getTitle())
+                                .setArtist(currentSong.getArtist())
+                                .build())
+                        .build();
+
                 player.setMediaItem(mediaItem);
                 player.prepare();
                 player.play();
                 player.setRepeatMode(isRepeat ? Player.REPEAT_MODE_ONE : Player.REPEAT_MODE_OFF);
+
+                // Start progress updates
+                progressHandler.post(progressRunnable);
+
                 startForeground(NOTIFICATION_ID, createNotification());
-                sendPlaybackStateBroadcast(); // Gửi broadcast
-                Log.d(TAG, "Playing song: " + activeList.get(index).getTitle());
+                sendPlaybackStateBroadcast();
+                Log.d(TAG, "Playing song: " + currentSong.getTitle());
             } catch (Exception e) {
                 Log.e(TAG, "Error playing song at index " + index, e);
             }
         } else {
-            Log.w(TAG, "Invalid index: " + index + ", songList size: " + songList.size());
+            Log.w(TAG, "Invalid index: " + index + ", activeList size: " + activeList.size());
         }
     }
 
@@ -177,14 +210,10 @@ public class MediaPlayerService extends MediaSessionService {
             if (player.isPlaying()) {
                 player.pause();
                 Log.d(TAG, "Player paused");
-                NotificationManager manager = getSystemService(NotificationManager.class);
-                manager.notify(NOTIFICATION_ID, createNotification());
             } else {
                 player.play();
                 Log.d(TAG, "Player resumed");
-                startForeground(NOTIFICATION_ID, createNotification());
             }
-            sendPlaybackStateBroadcast();
         } catch (Exception e) {
             Log.e(TAG, "Error toggling play/pause", e);
         }
@@ -229,14 +258,36 @@ public class MediaPlayerService extends MediaSessionService {
     }
 
     public void setShuffle(boolean shuffle) {
-        isShuffle = shuffle;
-        Log.d(TAG, "Shuffle mode set to: " + isShuffle);
-        if (isShuffle) {
-            shuffledSongList = new ArrayList<>(songList);
-            Collections.shuffle(shuffledSongList);
+        if (isShuffle != shuffle) {
+            isShuffle = shuffle;
+            Log.d(TAG, "Shuffle mode set to: " + isShuffle);
+
+            if (isShuffle) {
+                shuffledSongList = new ArrayList<>(songList);
+                Collections.shuffle(shuffledSongList);
+
+                if (currentSongIndex >= 0 && currentSongIndex < songList.size()) {
+                    Song currentSong = songList.get(currentSongIndex);
+                    int newIndex = shuffledSongList.indexOf(currentSong);
+                    if (newIndex != 0 && newIndex >= 0) {
+                        Collections.swap(shuffledSongList, 0, newIndex);
+                    }
+                    currentSongIndex = 0;
+                }
+            } else {
+                if (currentSongIndex >= 0 && currentSongIndex < shuffledSongList.size()) {
+                    Song currentSong = shuffledSongList.get(currentSongIndex);
+                    currentSongIndex = songList.indexOf(currentSong);
+                }
+            }
+
+            updateNotification();
+            sendPlaybackStateBroadcast();
         }
-        updateNotification();
-        sendPlaybackStateBroadcast();
+    }
+
+    public List<Song> getActiveList() {
+        return isShuffle ? shuffledSongList : songList;
     }
 
     private void toggleShuffle() {
@@ -258,42 +309,102 @@ public class MediaPlayerService extends MediaSessionService {
     @OptIn(markerClass = UnstableApi.class)
     private Notification createNotification() {
         Log.d(TAG, "Creating notification for song index: " + currentSongIndex);
+
+        // Get current song info
+        String title = "";
+        String artist = "";
+        if (currentSongIndex >= 0) {
+            List<Song> activeList = isShuffle ? shuffledSongList : songList;
+            if (currentSongIndex < activeList.size()) {
+                Song currentSong = activeList.get(currentSongIndex);
+                title = currentSong.getTitle();
+                artist = currentSong.getArtist();
+            }
+        }
+
+        // Create intents for notification actions
         Intent notificationIntent = new Intent(this, MediaPlayerActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Intent playPauseIntent = new Intent(this, MediaPlayerService.class).setAction("PLAY_PAUSE");
-        PendingIntent playPausePendingIntent = PendingIntent.getService(this, 0, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent playPausePendingIntent = PendingIntent.getService(this, 0, playPauseIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Intent nextIntent = new Intent(this, MediaPlayerService.class).setAction("NEXT");
-        PendingIntent nextPendingIntent = PendingIntent.getService(this, 0, nextIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent nextPendingIntent = PendingIntent.getService(this, 0, nextIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Intent previousIntent = new Intent(this, MediaPlayerService.class).setAction("PREVIOUS");
-        PendingIntent previousPendingIntent = PendingIntent.getService(this, 0, previousIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent previousPendingIntent = PendingIntent.getService(this, 0, previousIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Intent shuffleIntent = new Intent(this, MediaPlayerService.class).setAction("SHUFFLE");
-        PendingIntent shufflePendingIntent = PendingIntent.getService(this, 0, shuffleIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent shufflePendingIntent = PendingIntent.getService(this, 0, shuffleIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Intent repeatIntent = new Intent(this, MediaPlayerService.class).setAction("REPEAT");
-        PendingIntent repeatPendingIntent = PendingIntent.getService(this, 0, repeatIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent repeatPendingIntent = PendingIntent.getService(this, 0, repeatIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        List<Song> activeList = isShuffle ? shuffledSongList : songList;
+        int progress = 0;
+        String currentTimeStr = "0:00";
+        String totalTimeStr = "0:00";
+        if (player.getDuration() > 0) {
+            progress = (int) (player.getCurrentPosition() * 100 / player.getDuration());
+            currentTimeStr = formatTime(player.getCurrentPosition());
+            totalTimeStr = formatTime(player.getDuration());
+        }
+
+        RemoteViews collapsedView = new RemoteViews(getPackageName(), R.layout.notification_collapsed);
+        RemoteViews expandedView = new RemoteViews(getPackageName(), R.layout.notification_expanded);
+
+        collapsedView.setTextViewText(R.id.notification_title, title);
+        collapsedView.setTextViewText(R.id.notification_artist, artist);
+        collapsedView.setProgressBar(R.id.notification_progress, 100, progress, false);
+        collapsedView.setImageViewResource(R.id.notification_play_pause,
+                player.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
+
+        collapsedView.setOnClickPendingIntent(R.id.notification_previous, previousPendingIntent);
+        collapsedView.setOnClickPendingIntent(R.id.notification_play_pause, playPausePendingIntent);
+        collapsedView.setOnClickPendingIntent(R.id.notification_next, nextPendingIntent);
+
+        expandedView.setTextViewText(R.id.notification_title, title);
+        expandedView.setTextViewText(R.id.notification_artist, artist);
+        expandedView.setTextViewText(R.id.notification_current_time, currentTimeStr);
+        expandedView.setTextViewText(R.id.notification_total_time, totalTimeStr);
+        expandedView.setProgressBar(R.id.notification_progress, 100, progress, false);
+
+        expandedView.setImageViewResource(R.id.notification_play_pause,
+                player.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
+
+        expandedView.setImageViewResource(R.id.notification_shuffle,
+                isShuffle ? R.drawable.ic_shuffle_on : R.drawable.ic_shuffle);
+        expandedView.setImageViewResource(R.id.notification_repeat,
+                isRepeat ? R.drawable.ic_repeat_on : R.drawable.ic_repeat);
+
+        expandedView.setOnClickPendingIntent(R.id.notification_previous, previousPendingIntent);
+        expandedView.setOnClickPendingIntent(R.id.notification_play_pause, playPausePendingIntent);
+        expandedView.setOnClickPendingIntent(R.id.notification_next, nextPendingIntent);
+        expandedView.setOnClickPendingIntent(R.id.notification_shuffle, shufflePendingIntent);
+        expandedView.setOnClickPendingIntent(R.id.notification_repeat, repeatPendingIntent);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_cd)
-                .setContentTitle(activeList.get(currentSongIndex).getTitle())
-                .setContentText(activeList.get(currentSongIndex).getArtist())
                 .setContentIntent(pendingIntent)
-                .addAction(R.drawable.ic_shuffle, "Shuffle", shufflePendingIntent)
-                .addAction(R.drawable.ic_previous, "Previous", previousPendingIntent)
-                .addAction(player.getPlaybackState() == Player.STATE_IDLE ? R.drawable.ic_play : (player.isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play), "Play/Pause", playPausePendingIntent)
-                .addAction(R.drawable.ic_next, "Next", nextPendingIntent)
-                .addAction(R.drawable.ic_repeat, "Repeat", repeatPendingIntent)
-                .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                        .setMediaSession(mediaSession.getSessionCompatToken())
-                        .setShowActionsInCompactView(0, 1, 2, 3, 4))
                 .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setOngoing(player.isPlaying());
+                .setOngoing(player.isPlaying())
+                .setCustomContentView(collapsedView)
+                .setCustomBigContentView(expandedView)
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle());
 
+        Log.d(TAG, "Notification built with DecoratedCustomViewStyle");
         return builder.build();
+    }
+
+    private String formatTime(long millis) {
+        return String.format("%02d:%02d", TimeUnit.MILLISECONDS.toMinutes(millis),
+                TimeUnit.MILLISECONDS.toSeconds(millis) % 60);
     }
 
     private void updateNotification() {
@@ -319,6 +430,9 @@ public class MediaPlayerService extends MediaSessionService {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        // Remove callbacks to prevent leaks
+        progressHandler.removeCallbacks(progressRunnable);
+
         if (player != null) {
             player.release();
             Log.d(TAG, "Player released");
