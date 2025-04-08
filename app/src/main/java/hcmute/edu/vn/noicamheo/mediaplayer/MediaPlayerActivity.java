@@ -53,6 +53,8 @@ public class MediaPlayerActivity extends AppCompatActivity {
     private List<Song> songList = new ArrayList<>();
     private List<Song> filteredSongList = new ArrayList<>();
     private static final int REQUEST_CODE_PERMISSION = 123;
+    private static final int REQUEST_NOTIFICATION_PERMISSION = 456;
+    private boolean hasAskedNotificationPermission = false;
     private TextView tvSongTitle, tvArtistName;
     private ImageButton btnPlayPause, btnPrevious, btnNext, btnRepeat, btnShuffle;
     private SeekBar seekBar;
@@ -77,31 +79,30 @@ public class MediaPlayerActivity extends AppCompatActivity {
                 boolean receivedIsRepeat = intent.getBooleanExtra(MediaPlayerService.EXTRA_IS_REPEAT, false);
                 boolean receivedIsShuffle = intent.getBooleanExtra(MediaPlayerService.EXTRA_IS_SHUFFLE, false);
 
+                ArrayList<Song> activeSongList = intent.getParcelableArrayListExtra("active_song_list");
+
                 if (isRepeat != receivedIsRepeat) {
                     isRepeat = receivedIsRepeat;
                     btnRepeat.setImageResource(isRepeat ? R.drawable.ic_repeat_on : R.drawable.ic_repeat);
+                    Log.d(TAG, "Updated repeat button from broadcast: " + isRepeat);
                 }
 
                 if (isShuffle != receivedIsShuffle) {
                     isShuffle = receivedIsShuffle;
                     btnShuffle.setImageResource(isShuffle ? R.drawable.ic_shuffle_on : R.drawable.ic_shuffle);
+                    Log.d(TAG, "Updated shuffle button from broadcast: " + isShuffle);
                 }
 
-                if (currentSongIndex >= 0) {
-                    Song currentSong;
-                    if (isShuffle && mediaPlayerService != null) {
-                        List<Song> activeList = mediaPlayerService.getActiveList();
-                        if (currentSongIndex < activeList.size()) {
-                            currentSong = activeList.get(currentSongIndex);
-                        } else {
-                            return;
-                        }
-                    } else if (currentSongIndex < songList.size()) {
-                        currentSong = songList.get(currentSongIndex);
-                    } else {
-                        return;
-                    }
+                if (activeSongList != null && !activeSongList.isEmpty()) {
+                    songList.clear();
+                    songList.addAll(activeSongList);
+                    filterSongs(searchView.getQuery().toString());
+                    songAdapter.notifyDataSetChanged();
+                    Log.d(TAG, "Updated song list from broadcast, size: " + songList.size());
+                }
 
+                if (currentSongIndex >= 0 && currentSongIndex < songList.size()) {
+                    Song currentSong = songList.get(currentSongIndex);
                     tvSongTitle.setText(currentSong.getTitle());
                     tvArtistName.setText(currentSong.getArtist());
                 }
@@ -120,7 +121,10 @@ public class MediaPlayerActivity extends AppCompatActivity {
                     handler.removeCallbacks(updateSeekBar);
                 }
 
-                Log.d(TAG, "Received broadcast: currentSongIndex=" + currentSongIndex + ", isPlaying=" + isPlaying);
+                Log.d(TAG, "Received broadcast: currentSongIndex=" + currentSongIndex +
+                        ", isPlaying=" + isPlaying +
+                        ", isShuffle=" + isShuffle +
+                        ", isRepeat=" + isRepeat);
             }
         }
     };
@@ -255,6 +259,19 @@ public class MediaPlayerActivity extends AppCompatActivity {
         Log.d(TAG, "onDestroy called");
     }
 
+    private boolean checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            return ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+        }
+        return true;
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATION_PERMISSION);
+        }
+    }
+
     private void updatePlayerListener() {
         if (serviceBound) {
             ExoPlayer player = mediaPlayerService.getPlayer();
@@ -304,9 +321,19 @@ public class MediaPlayerActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_CODE_PERMISSION && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             scanAndLoadSongs();
+        } else if (requestCode == REQUEST_NOTIFICATION_PERMISSION && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Notification permission granted");
+            if (currentSongIndex >= 0 && currentSongIndex < songList.size()) {
+                playSong(songList.get(currentSongIndex));
+            }
         } else {
-            Toast.makeText(this, "Permission denied, cannot load songs", Toast.LENGTH_SHORT).show();
-            Log.w(TAG, "Permission denied");
+            if (requestCode == REQUEST_CODE_PERMISSION) {
+                Toast.makeText(this, "Permission denied, cannot load songs", Toast.LENGTH_SHORT).show();
+                Log.w(TAG, "Permission denied");
+            } else if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
+                Toast.makeText(this, "Notification permission denied, player notifications may not work properly", Toast.LENGTH_SHORT).show();
+                Log.w(TAG, "Notification permission denied");
+            }
         }
     }
 
@@ -422,9 +449,15 @@ public class MediaPlayerActivity extends AppCompatActivity {
 
     private void playSong(Song song) {
         Log.d(TAG, "Attempting to play song: " + song.getTitle());
+
+        if (!checkNotificationPermission() && !hasAskedNotificationPermission) {
+            requestNotificationPermission();
+            hasAskedNotificationPermission = true;
+            return;
+        }
+
         if (serviceBound) {
             try {
-                // Find the song in the active list (which could be shuffled)
                 List<Song> activeList = mediaPlayerService.getActiveList();
                 int indexInActiveList = -1;
 

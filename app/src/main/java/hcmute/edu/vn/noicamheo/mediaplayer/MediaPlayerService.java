@@ -48,7 +48,6 @@ public class MediaPlayerService extends MediaSessionService {
     private static final int NOTIFICATION_ID = 1;
     private static final String CHANNEL_ID = "MediaPlayerServiceChannel";
 
-    // Handler for updating notification progress
     private final Handler progressHandler = new Handler(Looper.getMainLooper());
     private final Runnable progressRunnable = new Runnable() {
         @Override
@@ -58,7 +57,6 @@ public class MediaPlayerService extends MediaSessionService {
         }
     };
 
-    // Broadcast actions
     public static final String ACTION_PLAYBACK_STATE_CHANGED = "hcmute.edu.vn.noicamheo.ACTION_PLAYBACK_STATE_CHANGED";
     public static final String EXTRA_CURRENT_SONG_INDEX = "current_song_index";
     public static final String EXTRA_IS_PLAYING = "is_playing";
@@ -81,7 +79,6 @@ public class MediaPlayerService extends MediaSessionService {
                     if (!isRepeat) {
                         playNextSong();
                     } else {
-                        // Replay the current song
                         player.seekTo(0);
                         player.play();
                         sendPlaybackStateBroadcast();
@@ -95,10 +92,8 @@ public class MediaPlayerService extends MediaSessionService {
             @Override
             public void onIsPlayingChanged(boolean isPlaying) {
                 if (isPlaying) {
-                    // Start progress updates when playing
                     progressHandler.post(progressRunnable);
                 } else {
-                    // Stop progress updates when paused
                     progressHandler.removeCallbacks(progressRunnable);
                 }
                 updateNotification();
@@ -191,7 +186,6 @@ public class MediaPlayerService extends MediaSessionService {
                 player.play();
                 player.setRepeatMode(isRepeat ? Player.REPEAT_MODE_ONE : Player.REPEAT_MODE_OFF);
 
-                // Start progress updates
                 progressHandler.post(progressRunnable);
 
                 startForeground(NOTIFICATION_ID, createNotification());
@@ -310,7 +304,6 @@ public class MediaPlayerService extends MediaSessionService {
     private Notification createNotification() {
         Log.d(TAG, "Creating notification for song index: " + currentSongIndex);
 
-        // Get current song info
         String title = "";
         String artist = "";
         if (currentSongIndex >= 0) {
@@ -322,7 +315,6 @@ public class MediaPlayerService extends MediaSessionService {
             }
         }
 
-        // Create intents for notification actions
         Intent notificationIntent = new Intent(this, MediaPlayerActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
@@ -420,17 +412,21 @@ public class MediaPlayerService extends MediaSessionService {
         intent.putExtra(EXTRA_DURATION, player.getDuration());
         intent.putExtra(EXTRA_IS_REPEAT, isRepeat);
         intent.putExtra(EXTRA_IS_SHUFFLE, isShuffle);
+
+        List<Song> activeList = getActiveList();
+        intent.putParcelableArrayListExtra("active_song_list", new ArrayList<>(activeList));
+
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
         Log.d(TAG, "Broadcast sent: currentSongIndex=" + currentSongIndex +
                 ", isPlaying=" + player.isPlaying() +
                 ", isRepeat=" + isRepeat +
-                ", isShuffle=" + isShuffle);
+                ", isShuffle=" + isShuffle +
+                ", activeListSize=" + activeList.size());
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        // Remove callbacks to prevent leaks
         progressHandler.removeCallbacks(progressRunnable);
 
         if (player != null) {
