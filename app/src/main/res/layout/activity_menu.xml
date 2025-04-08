@@ -154,28 +154,54 @@
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/btn_option1"
+        android:id="@+id/fab_battery_saver"
         android:layout_width="56dp"
         android:layout_height="56dp"
         android:visibility="gone"
         app:fabSize="normal"
         app:backgroundTint="@color/blue"
+        app:srcCompat="@drawable/ic_battery_saver"
         app:strokeWidth="2dp"
         app:strokeColor="@color/black"
-        app:layout_constraintBottom_toTopOf="@id/btn_option2"
+        app:layout_constraintBottom_toTopOf="@+id/fab_silent_mode"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginLeft="24dp"
         android:layout_marginBottom="16dp" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/btn_option2"
+        android:id="@+id/fab_silent_mode"
         android:layout_width="56dp"
         android:layout_height="56dp"
         android:visibility="gone"
         app:fabSize="normal"
         app:backgroundTint="@color/blue"
+        app:srcCompat="@drawable/ic_silent"
         app:strokeWidth="2dp"
         app:strokeColor="@color/black"
+        app:layout_constraintBottom_toTopOf="@+id/fab_auto_brightness"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginLeft="24dp"
+        android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_auto_brightness"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:visibility="gone"
+        app:backgroundTint="@color/blue"
+        app:srcCompat="@drawable/ic_brightness"
+        app:layout_constraintBottom_toTopOf="@+id/fab_dark_mode"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginLeft="24dp"
+        android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_dark_mode"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:visibility="gone"
+        app:backgroundTint="@color/blue"
+        app:srcCompat="@drawable/ic_dark_mode"
         app:layout_constraintBottom_toTopOf="@id/fab_main"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginLeft="24dp"
