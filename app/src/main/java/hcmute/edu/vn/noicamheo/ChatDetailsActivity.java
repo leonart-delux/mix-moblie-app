@@ -31,8 +31,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import hcmute.edu.vn.noicamheo.adapters.ChatMessageAdapter;
-import hcmute.edu.vn.noicamheo.models.Message;
+import hcmute.edu.vn.noicamheo.adapter.ChatMessageAdapter;
+import hcmute.edu.vn.noicamheo.entity.Message;
 
 public class ChatDetailsActivity extends AppCompatActivity {
     private static final String EXTRA_RECIPIENT_NAME = "extra_recipient_name";

@@ -1,4 +1,4 @@
-package hcmute.edu.vn.noicamheo.models;
+package hcmute.edu.vn.noicamheo.entity;
 
 import java.util.Date;
 

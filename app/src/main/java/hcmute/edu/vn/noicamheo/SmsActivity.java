@@ -36,8 +36,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import hcmute.edu.vn.noicamheo.adapters.MessageAdapter;
-import hcmute.edu.vn.noicamheo.models.Message;
+import hcmute.edu.vn.noicamheo.adapter.MessageAdapter;
+import hcmute.edu.vn.noicamheo.entity.Message;
 
 public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnMessageClickListener {
     private MessageAdapter adapter;

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.UUID;
 
-import hcmute.edu.vn.noicamheo.models.Message;
+import hcmute.edu.vn.noicamheo.entity.Message;
 
 public class NewMessageActivity extends AppCompatActivity {
     private AutoCompleteTextView recipientPhoneEdit;

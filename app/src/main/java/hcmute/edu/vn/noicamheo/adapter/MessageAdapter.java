@@ -1,4 +1,4 @@
-package hcmute.edu.vn.noicamheo.adapters;
+package hcmute.edu.vn.noicamheo.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,12 +10,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 import hcmute.edu.vn.noicamheo.R;
-import hcmute.edu.vn.noicamheo.models.Message;
+import hcmute.edu.vn.noicamheo.entity.Message;
 
 public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageViewHolder> {
     private List<Message> messages;
