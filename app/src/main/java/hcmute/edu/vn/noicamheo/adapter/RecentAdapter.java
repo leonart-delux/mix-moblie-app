@@ -2,9 +2,12 @@ package hcmute.edu.vn.noicamheo.adapter;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -14,7 +17,10 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import hcmute.edu.vn.noicamheo.R;
 import hcmute.edu.vn.noicamheo.entity.Recent;
@@ -33,6 +39,11 @@ public class RecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     public RecentAdapter(Context context, List<Object> recents) {
         this.context = context;
         this.recents = recents;
+    }
+
+    public void setFilteredList(List<Object> filteredList) {
+        this.recents = filteredList;
+        notifyDataSetChanged();
     }
 
     @Override
@@ -59,6 +70,9 @@ public class RecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             return;
         }
 
+        // Bind animation
+        holder.itemView.startAnimation(AnimationUtils.loadAnimation(holder.itemView.getContext(), R.anim.anim_contact_list));
+
         // Check if holder is header item or contact item
         if (getItemViewType(position) == TYPE_HEADER) {
             ((RecentHeaderViewHolder) holder).textViewHeader.setText(recents.get(position).toString());
@@ -78,6 +92,11 @@ public class RecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         // Set data for recent view holder
         Recent recent = (Recent) (recents.get(position));
         ((RecentViewHolder) holder).textViewRecentCall.setText(recent.getFullName());
+        // Set time call
+        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());  // Create date formater
+        String timeString = timeFormat.format(recent.getDate().getTime());                         // Format date into formatted string
+        ((RecentViewHolder) holder).textViewTime.setText(timeString);
+        // --
         ((RecentViewHolder) holder).textViewPhone.setText(String.join(" ", "Phone", recent.getPhoneNumber()));
 
         switch (recent.geteRecentCallType()) {
@@ -115,7 +134,7 @@ public class RecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
 
         // Set event for contact item to display phone number when clicked
-        ((RecentViewHolder) holder).textViewRecentCall.setOnClickListener(v -> {
+        ((RecentViewHolder) holder).layout.setOnClickListener(v -> {
             // Temporary save the previous clicked position
             int temp = previousOpenItemPosition;
             // Update new value for the variable below
@@ -129,6 +148,13 @@ public class RecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             // Notify adapter to change view
             notifyItemChanged(temp);
             notifyItemChanged(previousOpenItemPosition);
+        });
+
+        // Set phone call event
+        ((RecentViewHolder) holder).imageViewCall.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_CALL);
+            intent.setData(Uri.parse("tel:" + recent.getPhoneNumber()));
+            v.getContext().startActivity(intent);
         });
     }
 
@@ -149,8 +175,10 @@ public class RecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     // Represent an element recent call in the recent call list
     private class RecentViewHolder extends RecyclerView.ViewHolder {
+        RelativeLayout layout;
         ImageView imageViewCallType;
         TextView textViewRecentCall;
+        TextView textViewTime;
         RelativeLayout openPanel;
         TextView textViewPhone;
         ImageView imageViewCall;
@@ -160,8 +188,10 @@ public class RecentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
         public RecentViewHolder(@NonNull View itemView) {
             super(itemView);
+            layout = itemView.findViewById(R.id.itemRecent);
             imageViewCallType = itemView.findViewById(R.id.imageViewCallType);
             textViewRecentCall = itemView.findViewById(R.id.textViewRecentCall);
+            textViewTime = itemView.findViewById(R.id.textViewTime);
             openPanel = itemView.findViewById(R.id.relativeLayoutOpeningPanel);
             textViewPhone = itemView.findViewById(R.id.textViewPhone);
             imageViewCall = itemView.findViewById(R.id.imageViewCall);

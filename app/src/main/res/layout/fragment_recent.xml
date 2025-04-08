@@ -6,7 +6,7 @@
     tools:context=".fragments.RecentFragment"
     android:background="@color/white">
 
-    <SearchView
+    <androidx.appcompat.widget.SearchView
         android:id="@+id/searchViewRecent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

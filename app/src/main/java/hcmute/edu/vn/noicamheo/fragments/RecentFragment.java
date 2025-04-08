@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
 
+import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -15,18 +16,25 @@ import android.provider.CallLog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.ListIterator;
 
 import hcmute.edu.vn.noicamheo.R;
 import hcmute.edu.vn.noicamheo.adapter.RecentAdapter;
+import hcmute.edu.vn.noicamheo.entity.Contact;
 import hcmute.edu.vn.noicamheo.entity.ERecentCallType;
 import hcmute.edu.vn.noicamheo.entity.Recent;
 
 public class RecentFragment extends Fragment {
     RecyclerView recyclerViewRecent;
+    SearchView searchView;
+    RecentAdapter recentAdapter;
     private static final int REQUEST_CODE_CONTACT = 102;        // Code to request permission
     private List<Object> recents = new ArrayList<>();
 
@@ -38,6 +46,7 @@ public class RecentFragment extends Fragment {
 
         // Load component on UI
         recyclerViewRecent = view.findViewById(R.id.recyclerViewRecentHolder);
+        searchView = view.findViewById(R.id.searchViewRecent);
 
         // Check for permission
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_CALL_LOG)
@@ -47,12 +56,48 @@ public class RecentFragment extends Fragment {
 
         // Load data
         recents = loadCallHistory();
+        addContactListHeader(recents);
 
         // Append data with recycler
         recyclerViewRecent.setLayoutManager(new LinearLayoutManager(getContext()));
-        recyclerViewRecent.setAdapter(new RecentAdapter(getContext(), recents));
+        recentAdapter = new RecentAdapter(getContext(), recents);
+        recyclerViewRecent.setAdapter(recentAdapter);
+
+        // Set event for search bar
+        searchView.clearFocus();
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                filterList(newText);
+                return false;
+            }
+        });
 
         return view;
+    }
+
+    private void filterList(String newText) {
+        List<Object> filteredList = new ArrayList<>();
+        for (Object object: recents) {
+            if (object instanceof Recent && (
+                    ((Recent) object).getFullName().toLowerCase().contains(newText.toLowerCase()) ||
+                            ((Recent) object).getPhoneNumber().contains(newText)
+            )) {
+                filteredList.add(object);
+            }
+        }
+
+        if (filteredList.isEmpty()) {
+            Toast.makeText(requireContext(), "No result found!", Toast.LENGTH_SHORT).show();
+        } else {
+            addContactListHeader(filteredList);
+            recentAdapter.setFilteredList(filteredList);
+        }
     }
 
     private List<Object> loadCallHistory() {
@@ -100,17 +145,54 @@ public class RecentFragment extends Fragment {
 
                 // If name null --> not exist in contact
                 boolean isInContact =  true;
-                if (name == null) {
+                if (name == null || name.isEmpty()) {
                     name = number;
                     isInContact = false;
                 }
 
+                // Convert date from millisecond to Calender
+                Calendar date = Calendar.getInstance();
+                date.setTimeInMillis(dateMillis);
+
                 // Add recent object to list
-                recents.add(new Recent(name, number, callType, isInContact, new Date(dateMillis), duration));
+                recents.add(new Recent(name, number, callType, isInContact, date, duration));
             }
             cursor.close();
         }
 
         return recents;
+    }
+
+    private void addContactListHeader(List<Object> recentList) {
+        ListIterator<Object> iterator = recentList.listIterator();
+        Calendar lastDate = null;
+
+        while (iterator.hasNext()) {
+            Object recentElement = iterator.next();
+
+            if (!(recentElement instanceof Recent)) {
+                continue;
+            }
+
+            // Current item date
+            Calendar currentDate = ((Recent) recentElement).getDate();
+
+            if (lastDate == null || !isSameDay(currentDate, lastDate)) {
+                lastDate = (Calendar) currentDate.clone();
+
+                // Format date header
+                String dateString = android.text.format.DateFormat.format("EEE, dd/MM/yyyy", currentDate).toString();
+
+                iterator.previous();
+                iterator.add(dateString);
+                iterator.next();
+            }
+        }
+    }
+
+    private boolean isSameDay(Calendar c1, Calendar c2) {
+        return c1.get(Calendar.YEAR) == c2.get(Calendar.YEAR)
+                && c1.get(Calendar.MONTH) == c2.get(Calendar.MONTH)
+                && c1.get(Calendar.DAY_OF_MONTH) == c2.get(Calendar.DAY_OF_MONTH);
     }
 }

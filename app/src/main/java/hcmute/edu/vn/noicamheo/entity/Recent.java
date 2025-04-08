@@ -1,17 +1,17 @@
 package hcmute.edu.vn.noicamheo.entity;
 
-import java.util.Date;
+import java.util.Calendar;
 
 public class Recent {
     private String fullName;
     private String phoneNumber;
     private ERecentCallType eRecentCallType;
     private boolean isInContact;
-    private Date date;
+    private Calendar date;
 
     private int duration;
 
-    public Recent(String fullName, String phoneNumber, ERecentCallType eRecentCallType, boolean isInContact, Date date, int duration) {
+    public Recent(String fullName, String phoneNumber, ERecentCallType eRecentCallType, boolean isInContact, Calendar date, int duration) {
         this.fullName = fullName;
         this.phoneNumber = phoneNumber;
         this.eRecentCallType = eRecentCallType;
@@ -53,7 +53,7 @@ public class Recent {
     }
 
 
-    public void setDate(Date date) {
+    public void setDate(Calendar date) {
         this.date = date;
     }
 
@@ -61,7 +61,7 @@ public class Recent {
         this.duration = duration;
     }
 
-    public Date getDate() {
+    public Calendar getDate() {
         return date;
     }
 

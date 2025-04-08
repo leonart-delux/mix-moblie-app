@@ -1,14 +1,12 @@
 package hcmute.edu.vn.noicamheo.fragments;
 
-import android.app.Application;
-import android.content.ContentResolver;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
 import android.Manifest;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -30,8 +28,10 @@ import hcmute.edu.vn.noicamheo.entity.Contact;
 
 public class ContactFragment extends Fragment {
     RecyclerView recyclerViewContact;
+    SearchView searchView;
+    ContactAdapter contactAdapter;
     private static final int REQUEST_CODE_CONTACT = 101;      // Code to request permission
-    private final List<Object> contacts = new ArrayList<>();
+    private List<Object> contacts = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -41,6 +41,7 @@ public class ContactFragment extends Fragment {
 
         // Load components on UI
         recyclerViewContact = view.findViewById(R.id.recyclerViewContactHolder);
+        searchView = view.findViewById(R.id.searchViewContact);
 
         // Check for permission
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
@@ -49,13 +50,49 @@ public class ContactFragment extends Fragment {
 
         // First load data
         contacts.addAll(loadContacts());
-        addContactListHeader();
+        addContactListHeader(contacts);
 
         // Append data with recycler view
         recyclerViewContact.setLayoutManager(new LinearLayoutManager(getContext()));
-        recyclerViewContact.setAdapter(new ContactAdapter(getContext(), contacts));
+        contactAdapter = new ContactAdapter(getContext(), contacts);
+        recyclerViewContact.setAdapter(contactAdapter);
+
+        // Set event for search bar
+        searchView.clearFocus();
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                filterList(newText);
+                return false;
+            }
+        });
 
         return view;
+    }
+
+    // Filter list contact when search bar is being queried
+    private void filterList(String newText) {
+        List<Object> filteredList = new ArrayList<>();
+        for (Object object: contacts) {
+            if (object instanceof Contact && (
+                    ((Contact) object).getFullName().toLowerCase().contains(newText.toLowerCase()) ||
+                            ((Contact) object).getPhoneNumber().contains(newText)
+                    )) {
+                filteredList.add(object);
+            }
+        }
+
+        if (filteredList.isEmpty()) {
+            Toast.makeText(requireContext(), "No result found!", Toast.LENGTH_SHORT).show();
+        } else {
+            addContactListHeader(filteredList);
+            contactAdapter.setFilteredList(filteredList);
+        }
     }
 
     private List<Object> loadContacts() {
@@ -92,9 +129,9 @@ public class ContactFragment extends Fragment {
         return contacts;
     }
 
-    private void addContactListHeader() {
+    private void addContactListHeader(List<Object> contactList) {
         // Usa Iterator instead of list because cannot modify list while using for-each
-        ListIterator<Object> iterator = contacts.listIterator();
+        ListIterator<Object> iterator = contactList.listIterator();
         Character lastChar = null;
 
         while (iterator.hasNext()) {
