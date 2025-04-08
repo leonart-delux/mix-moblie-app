@@ -149,6 +149,7 @@
             android:textColor="@color/white"
             android:textStyle="bold"
             android:layout_margin="8dp"
+            android:onClick="openSystemSettings"
             app:backgroundTint="@color/purple"
             app:cornerRadius="8dp" />
     </LinearLayout>
