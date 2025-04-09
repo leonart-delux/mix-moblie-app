@@ -1,7 +1,6 @@
 package hcmute.edu.vn.noicamheo;
 
 import android.app.AlertDialog;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -31,6 +30,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import hcmute.edu.vn.noicamheo.mediaplayer.MediaPlayerActivity;
+import hcmute.edu.vn.noicamheo.mediaplayer.MediaPlayerService;
 import hcmute.edu.vn.noicamheo.system_setting.BatterySaverService;
 
 public class MenuActivity extends AppCompatActivity {
@@ -92,7 +92,6 @@ public class MenuActivity extends AppCompatActivity {
             isExpanded = !isExpanded;
         });
 
-
         fabBatterySaver.setOnClickListener(v -> toggleBatterySaver(fabBatterySaver));
         fabSilentMode.setOnClickListener(v -> toggleSilentMode(fabSilentMode));
         fabAutoBrightness.setOnClickListener(v -> toggleAutoBrightness(fabAutoBrightness));
@@ -103,6 +102,10 @@ public class MenuActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        // Khởi động MediaPlayerService nếu chưa chạy
+        Intent serviceIntent = new Intent(this, MediaPlayerService.class);
+        startService(serviceIntent);
     }
 
     public void openSystemSettings(View view) {
@@ -359,7 +362,7 @@ public class MenuActivity extends AppCompatActivity {
             }
         } catch (Exception e) {
             Toast.makeText(this, "Không thể điều khiển chế độ im lặng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            isSilentModeEnabled = !isSilentModeEnabled; // Đặt lại trạng thái nếu thất bại
+            isSilentModeEnabled = !isSilentModeEnabled;
         }
     }
 

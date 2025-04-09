@@ -44,7 +44,13 @@ public class MediaPlayerService extends MediaSessionService {
     private int currentSongIndex = -1;
     private boolean isRepeat = false;
     private boolean isShuffle = false;
+    public boolean isRepeat() {
+        return isRepeat;
+    }
 
+    public boolean isShuffle() {
+        return isShuffle;
+    }
     private static final int NOTIFICATION_ID = 1;
     private static final String CHANNEL_ID = "MediaPlayerServiceChannel";
 

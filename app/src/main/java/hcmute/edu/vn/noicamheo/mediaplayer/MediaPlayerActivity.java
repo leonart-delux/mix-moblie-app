@@ -38,7 +38,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -50,8 +49,8 @@ public class MediaPlayerActivity extends AppCompatActivity {
     private static final String TAG = "MediaPlayerActivity";
     private RecyclerView recyclerView;
     private SongAdapter songAdapter;
-    private List<Song> songList = new ArrayList<>();
-    private List<Song> filteredSongList = new ArrayList<>();
+    private List<Song> songList = new ArrayList<>(); // Danh sách gốc, không thay đổi
+    private List<Song> filteredSongList = new ArrayList<>(); // Danh sách hiển thị trên RecyclerView
     private static final int REQUEST_CODE_PERMISSION = 123;
     private static final int REQUEST_NOTIFICATION_PERMISSION = 456;
     private boolean hasAskedNotificationPermission = false;
@@ -72,7 +71,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (MediaPlayerService.ACTION_PLAYBACK_STATE_CHANGED.equals(intent.getAction())) {
-                currentSongIndex = intent.getIntExtra(MediaPlayerService.EXTRA_CURRENT_SONG_INDEX, -1);
+                int receivedSongIndex = intent.getIntExtra(MediaPlayerService.EXTRA_CURRENT_SONG_INDEX, -1);
                 boolean isPlaying = intent.getBooleanExtra(MediaPlayerService.EXTRA_IS_PLAYING, false);
                 long currentPosition = intent.getLongExtra(MediaPlayerService.EXTRA_CURRENT_POSITION, 0);
                 long duration = intent.getLongExtra(MediaPlayerService.EXTRA_DURATION, 0);
@@ -81,6 +80,7 @@ public class MediaPlayerActivity extends AppCompatActivity {
 
                 ArrayList<Song> activeSongList = intent.getParcelableArrayListExtra("active_song_list");
 
+                // Cập nhật trạng thái repeat và shuffle
                 if (isRepeat != receivedIsRepeat) {
                     isRepeat = receivedIsRepeat;
                     btnRepeat.setImageResource(isRepeat ? R.drawable.ic_repeat_on : R.drawable.ic_repeat);
@@ -93,18 +93,21 @@ public class MediaPlayerActivity extends AppCompatActivity {
                     Log.d(TAG, "Updated shuffle button from broadcast: " + isShuffle);
                 }
 
-                if (activeSongList != null && !activeSongList.isEmpty()) {
-                    songList.clear();
-                    songList.addAll(activeSongList);
-                    filterSongs(searchView.getQuery().toString());
-                    songAdapter.notifyDataSetChanged();
-                    Log.d(TAG, "Updated song list from broadcast, size: " + songList.size());
-                }
+                // Tìm vị trí bài hát hiện tại trong songList gốc
+                if (receivedSongIndex >= 0 && receivedSongIndex < activeSongList.size()) {
+                    Song currentSongInActiveList = activeSongList.get(receivedSongIndex);
+                    for (int i = 0; i < songList.size(); i++) {
+                        if (songList.get(i).getPath().equals(currentSongInActiveList.getPath())) {
+                            currentSongIndex = i;
+                            break;
+                        }
+                    }
 
-                if (currentSongIndex >= 0 && currentSongIndex < songList.size()) {
-                    Song currentSong = songList.get(currentSongIndex);
-                    tvSongTitle.setText(currentSong.getTitle());
-                    tvArtistName.setText(currentSong.getArtist());
+                    if (currentSongIndex >= 0 && currentSongIndex < songList.size()) {
+                        Song currentSong = songList.get(currentSongIndex);
+                        tvSongTitle.setText(currentSong.getTitle());
+                        tvArtistName.setText(currentSong.getArtist());
+                    }
                 }
 
                 btnPlayPause.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
@@ -138,6 +141,8 @@ public class MediaPlayerActivity extends AppCompatActivity {
             Log.d(TAG, "Service connected, setting song list");
             mediaPlayerService.setSongList(songList);
             updatePlayerListener();
+            // Đồng bộ hóa ngay khi service được kết nối
+            syncWithService();
         }
 
         @Override
@@ -153,6 +158,16 @@ public class MediaPlayerActivity extends AppCompatActivity {
         Log.d(TAG, "onCreate called");
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_mediaplay);
+
+        // Khôi phục trạng thái nếu có
+        if (savedInstanceState != null) {
+            currentSongIndex = savedInstanceState.getInt("currentSongIndex", -1);
+            isRepeat = savedInstanceState.getBoolean("isRepeat", false);
+            isShuffle = savedInstanceState.getBoolean("isShuffle", false);
+            Log.d(TAG, "Restored state: currentSongIndex=" + currentSongIndex +
+                    ", isRepeat=" + isRepeat +
+                    ", isShuffle=" + isShuffle);
+        }
 
         Intent intent = new Intent(this, MediaPlayerService.class);
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
@@ -181,8 +196,8 @@ public class MediaPlayerActivity extends AppCompatActivity {
         searchView = findViewById(R.id.sv_media);
         searchView.setQueryHint("Search");
 
-        btnRepeat.setImageResource(R.drawable.ic_repeat);
-        btnShuffle.setImageResource(R.drawable.ic_shuffle);
+        btnRepeat.setImageResource(isRepeat ? R.drawable.ic_repeat_on : R.drawable.ic_repeat);
+        btnShuffle.setImageResource(isShuffle ? R.drawable.ic_shuffle_on : R.drawable.ic_shuffle);
 
         if (checkPermission()) {
             scanAndLoadSongs();
@@ -231,10 +246,32 @@ public class MediaPlayerActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("currentSongIndex", currentSongIndex);
+        outState.putBoolean("isRepeat", isRepeat);
+        outState.putBoolean("isShuffle", isShuffle);
+        Log.d(TAG, "Saved state: currentSongIndex=" + currentSongIndex +
+                ", isRepeat=" + isRepeat +
+                ", isShuffle=" + isShuffle);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d(TAG, "onStart called");
+        if (!serviceBound) {
+            Intent intent = new Intent(this, MediaPlayerService.class);
+            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume called");
         if (serviceBound) {
+            syncWithService();
             handler.post(updateSeekBar);
         }
     }
@@ -247,16 +284,72 @@ public class MediaPlayerActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d(TAG, "onStop called");
+        // Không unbind service ở đây để duy trì kết nối
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(playbackStateReceiver);
-        if (serviceBound) {
-            unbindService(serviceConnection);
-            serviceBound = false;
-            Log.d(TAG, "Service unbound");
-        }
-        handler.removeCallbacks(updateSeekBar);
         Log.d(TAG, "onDestroy called");
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(playbackStateReceiver);
+        handler.removeCallbacks(updateSeekBar);
+        // Chỉ unbind service nếu ứng dụng thực sự thoát hoàn toàn
+        if (isFinishing()) {
+            if (serviceBound) {
+                unbindService(serviceConnection);
+                serviceBound = false;
+                Log.d(TAG, "Service unbound");
+            }
+        }
+    }
+
+    private void syncWithService() {
+        if (serviceBound) {
+            // Lấy currentSongIndex từ MediaPlayerService
+            int serviceSongIndex = mediaPlayerService.getCurrentSongIndex();
+            List<Song> activeList = mediaPlayerService.getActiveList();
+
+            if (serviceSongIndex >= 0 && serviceSongIndex < activeList.size()) {
+                Song currentSongInActiveList = activeList.get(serviceSongIndex);
+                for (int i = 0; i < songList.size(); i++) {
+                    if (songList.get(i).getPath().equals(currentSongInActiveList.getPath())) {
+                        currentSongIndex = i;
+                        break;
+                    }
+                }
+
+                if (currentSongIndex >= 0 && currentSongIndex < songList.size()) {
+                    Song currentSong = songList.get(currentSongIndex);
+                    tvSongTitle.setText(currentSong.getTitle());
+                    tvArtistName.setText(currentSong.getArtist());
+                }
+
+                // Cập nhật các trạng thái khác
+                isRepeat = mediaPlayerService.isRepeat();
+                isShuffle = mediaPlayerService.isShuffle();
+                btnRepeat.setImageResource(isRepeat ? R.drawable.ic_repeat_on : R.drawable.ic_repeat);
+                btnShuffle.setImageResource(isShuffle ? R.drawable.ic_shuffle_on : R.drawable.ic_shuffle);
+
+                // Cập nhật seek bar và thời gian
+                long duration = mediaPlayerService.getPlayer().getDuration();
+                long currentPosition = mediaPlayerService.getPlayer().getCurrentPosition();
+                seekBar.setMax((int) duration);
+                seekBar.setProgress((int) currentPosition);
+                tvCurrentTime.setText(formatTime((int) currentPosition));
+                tvTotalTime.setText(formatTime((int) duration));
+
+                // Cập nhật nút play/pause
+                btnPlayPause.setImageResource(mediaPlayerService.getPlayer().isPlaying() ? R.drawable.ic_pause : R.drawable.ic_play);
+
+                Log.d(TAG, "Synced with service: currentSongIndex=" + currentSongIndex +
+                        ", isPlaying=" + mediaPlayerService.getPlayer().isPlaying() +
+                        ", isShuffle=" + isShuffle +
+                        ", isRepeat=" + isRepeat);
+            }
+        }
     }
 
     private boolean checkNotificationPermission() {
@@ -399,13 +492,6 @@ public class MediaPlayerActivity extends AppCompatActivity {
             return;
         }
 
-        Song currentSong = null;
-        if (serviceBound && mediaPlayerService.getPlayer() != null &&
-                mediaPlayerService.getPlayer().isPlaying() && currentSongIndex >= 0 &&
-                currentSongIndex < songList.size()) {
-            currentSong = songList.get(currentSongIndex);
-        }
-
         isShuffle = !isShuffle;
         if (serviceBound) {
             mediaPlayerService.setShuffle(isShuffle);
@@ -415,16 +501,6 @@ public class MediaPlayerActivity extends AppCompatActivity {
             } else {
                 btnShuffle.setImageResource(R.drawable.ic_shuffle);
                 Log.d(TAG, "Shuffle mode OFF");
-            }
-
-            if (currentSong != null) {
-                List<Song> activeList = mediaPlayerService.getActiveList();
-                for (int i = 0; i < activeList.size(); i++) {
-                    if (activeList.get(i).getPath().equals(currentSong.getPath())) {
-                        currentSongIndex = i;
-                        break;
-                    }
-                }
             }
         } else {
             Log.w(TAG, "Service not bound, cannot toggle shuffle");
@@ -458,25 +534,16 @@ public class MediaPlayerActivity extends AppCompatActivity {
 
         if (serviceBound) {
             try {
-                List<Song> activeList = mediaPlayerService.getActiveList();
-                int indexInActiveList = -1;
-
-                for (int i = 0; i < activeList.size(); i++) {
-                    if (activeList.get(i).getPath().equals(song.getPath())) {
-                        indexInActiveList = i;
-                        break;
-                    }
-                }
-
-                if (indexInActiveList != -1) {
-                    currentSongIndex = indexInActiveList;
+                // Tìm vị trí bài hát trong danh sách gốc
+                currentSongIndex = songList.indexOf(song);
+                if (currentSongIndex != -1) {
+                    Log.d(TAG, "Current song index: " + currentSongIndex);
+                    mediaPlayerService.playSong(currentSongIndex);
+                    Log.d(TAG, "Song played successfully: " + song.getTitle());
                 } else {
-                    currentSongIndex = songList.indexOf(song);
+                    Log.w(TAG, "Song not found in list: " + song.getTitle());
+                    Toast.makeText(this, "Song not found", Toast.LENGTH_SHORT).show();
                 }
-
-                Log.d(TAG, "Current song index: " + currentSongIndex);
-                mediaPlayerService.playSong(currentSongIndex);
-                Log.d(TAG, "Song played successfully: " + song.getTitle());
             } catch (Exception e) {
                 Log.e(TAG, "Error playing song: " + song.getTitle(), e);
                 Toast.makeText(this, "Error playing song", Toast.LENGTH_SHORT).show();

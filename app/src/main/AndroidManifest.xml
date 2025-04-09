@@ -56,6 +56,7 @@
             android:parentActivityName=".MenuActivity">
         </activity>
 
+        <!-- Danh -->
         <activity
             android:name=".ScheduleActivity"
             android:exported="true"
@@ -63,13 +64,51 @@
             android:parentActivityName=".MenuActivity">
         </activity>
 
+        <activity android:name=".ScheduleAddTask" android:exported="true"/>
+        <activity android:name=".AlarmActivity" android:exported="true"/>
+
+        <receiver android:name=".broadcastReceiver.AlarmBroadcastReceiver"
+            android:enabled="true"
+            android:exported="false">
+
+        </receiver>
+        <receiver android:name=".broadcastReceiver.BootBroadcastReceiver" android:enabled="true" android:exported="false" android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+        <service android:name=".service.AlarmService"
+            android:enabled="true"
+            android:exported="false"/>
+
+        <!-- myuh -->
         <activity
-            android:name="hcmute.edu.vn.noicamheo.mediaplayer.MediaPlayerActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:parentActivityName=".MenuActivity">
+            android:name=".mediaplayer.MediaPlayerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
 
+        <service
+            android:name=".mediaplayer.MediaPlayerService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <receiver
+            android:name=".system_setting.BatteryBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BATTERY_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".system_setting.BatterySaverService" />
+
+        <!-- Vu -->
         <activity
             android:name=".SmsActivity"
             android:exported="true"
