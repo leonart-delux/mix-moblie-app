@@ -88,13 +88,53 @@ public class ScheduleAddTask extends AppCompatActivity {
     }
 
     private void showTimePicker() {
-        Calendar myCalendar = Calendar.getInstance();
+        Calendar currentCalendar = Calendar.getInstance();
+
         new TimePickerDialog(this, (view, hourOfDay, minute) -> {
-            myCalendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
-            myCalendar.set(Calendar.MINUTE, minute);
-            String timeFormat = new SimpleDateFormat("HH:mm", Locale.US).format(myCalendar.getTime());
-            addTaskTime.setText(timeFormat);
-        }, myCalendar.get(Calendar.HOUR_OF_DAY), myCalendar.get(Calendar.MINUTE), true).show();
+            Calendar selectedTime = Calendar.getInstance();
+            selectedTime.set(Calendar.HOUR_OF_DAY, hourOfDay);
+            selectedTime.set(Calendar.MINUTE, minute);
+            selectedTime.set(Calendar.SECOND, 0);
+            selectedTime.set(Calendar.MILLISECOND, 0);
+
+            // Lấy ngày người dùng đã chọn ở addTaskDate
+            String dateText = addTaskDate.getText().toString().trim();
+            if (dateText.isEmpty()) {
+                Toast.makeText(this, "Vui lòng chọn ngày trước!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Ghép ngày và năm hiện tại lại để phân tích
+            int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+            String fullDate = dateText + " " + currentYear;
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat("EEE dd MMM yyyy", Locale.US);
+            try {
+                Date parsedDate = dateFormat.parse(fullDate);
+                Calendar selectedDate = Calendar.getInstance();
+                selectedDate.setTime(parsedDate);
+
+                // Gán giờ phút vào ngày đã chọn
+                selectedDate.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                selectedDate.set(Calendar.MINUTE, minute);
+                selectedDate.set(Calendar.SECOND, 0);
+                selectedDate.set(Calendar.MILLISECOND, 0);
+
+                // So sánh với thời gian hiện tại
+                if (selectedDate.before(currentCalendar)) {
+                    Toast.makeText(this, "Không thể chọn thời gian trong quá khứ!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                String timeFormat = new SimpleDateFormat("HH:mm", Locale.US).format(selectedDate.getTime());
+                addTaskTime.setText(timeFormat);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Lỗi định dạng ngày!", Toast.LENGTH_SHORT).show();
+            }
+
+        }, currentCalendar.get(Calendar.HOUR_OF_DAY), currentCalendar.get(Calendar.MINUTE), true).show();
     }
 
     private void loadTaskData(int taskId) {
