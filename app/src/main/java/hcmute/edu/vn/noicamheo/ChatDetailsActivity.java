@@ -10,8 +10,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.telephony.SmsManager;
+import android.util.Log;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -163,7 +165,9 @@ public class ChatDetailsActivity extends AppCompatActivity {
             ArrayList<Message> messages = loadMessagesFromSystem();
             mainHandler.post(() -> {
                 adapter.setMessages(messages);
-                chatRecyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
+                if (!messages.isEmpty()) {
+                    chatRecyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
+                }
             });
         });
     }
@@ -172,8 +176,24 @@ public class ChatDetailsActivity extends AppCompatActivity {
         ArrayList<Message> messages = new ArrayList<>();
 
         Uri uri = Telephony.Sms.CONTENT_URI;
-        String selection = Telephony.Sms.ADDRESS + " = ?";
-        String[] selectionArgs = new String[]{recipientId};
+        String normalizedRecipientId = normalizePhoneNumber(recipientId);
+        Log.d("ChatDetailsActivity", "recipientId: " + recipientId + ", normalizedRecipientId: " + normalizedRecipientId);
+
+        // Tạo các biến thể của recipientId
+        String rawNumber = recipientId.startsWith("+84") ? "0" + recipientId.substring(3) : recipientId; // Chuyển +84343883136 thành 0343883136
+        String selection = "(" + Telephony.Sms.ADDRESS + " = ? OR " + Telephony.Sms.ADDRESS + " = ? OR " +
+                Telephony.Sms.ADDRESS + " = ? OR " + Telephony.Sms.ADDRESS + " = ? OR " +
+                Telephony.Sms.ADDRESS + " = ?) AND (" +
+                Telephony.Sms.TYPE + " = ? OR " + Telephony.Sms.TYPE + " = ?)";
+        String[] selectionArgs = new String[]{
+                recipientId,
+                normalizedRecipientId,
+                recipientId.replaceAll("[^0-9]", ""),
+                normalizedRecipientId.replaceAll("[^0-9]", ""),
+                rawNumber, // Thêm biến thể 0343883136
+                String.valueOf(Telephony.Sms.MESSAGE_TYPE_SENT),
+                String.valueOf(Telephony.Sms.MESSAGE_TYPE_INBOX)
+        };
 
         Cursor cursor = getContentResolver().query(
                 uri,
@@ -184,6 +204,7 @@ public class ChatDetailsActivity extends AppCompatActivity {
         );
 
         if (cursor != null) {
+            Log.d("ChatDetailsActivity", "Cursor count: " + cursor.getCount()); // Thêm log để kiểm tra số lượng tin nhắn tìm thấy
             int idIndex = cursor.getColumnIndex(Telephony.Sms._ID);
             int addressIndex = cursor.getColumnIndex(Telephony.Sms.ADDRESS);
             int bodyIndex = cursor.getColumnIndex(Telephony.Sms.BODY);
@@ -193,18 +214,20 @@ public class ChatDetailsActivity extends AppCompatActivity {
             while (cursor.moveToNext()) {
                 String id = cursor.getString(idIndex);
                 String address = cursor.getString(addressIndex);
+                Log.d("ChatDetailsActivity", "Raw address from system: " + address);
                 String body = cursor.getString(bodyIndex);
                 long date = cursor.getLong(dateIndex);
                 int type = cursor.getInt(typeIndex);
 
+                String normalizedAddress = normalizePhoneNumber(address);
                 boolean isSent = (type == Telephony.Sms.MESSAGE_TYPE_SENT);
-                String senderName = isSent ? "Me" : recipientId;
+                String senderName = isSent ? "Me" : getContactName(normalizedAddress);
 
                 Message message = new Message(
                         id,
-                        isSent ? currentUserId : address,
+                        isSent ? currentUserId : normalizedAddress,
                         senderName,
-                        isSent ? address : currentUserId,
+                        isSent ? normalizedAddress : currentUserId,
                         body,
                         new Date(date),
                         isSent
@@ -213,8 +236,55 @@ public class ChatDetailsActivity extends AppCompatActivity {
                 messages.add(message);
             }
             cursor.close();
+        } else {
+            Log.d("ChatDetailsActivity", "Cursor is null");
         }
         return messages;
+    }
+    private String normalizePhoneNumber(String phoneNumber) {
+        if (phoneNumber == null) return null;
+
+        // Xóa tất cả ký tự không phải số (khoảng trắng, dấu gạch ngang, dấu cộng, v.v.)
+        String cleanedNumber = phoneNumber.replaceAll("[^0-9]", "");
+
+        // Nếu không phải số hoặc quá ngắn, trả về nguyên bản
+        if (cleanedNumber.isEmpty()) {
+            return phoneNumber;
+        }
+
+        // Chuẩn hóa số Việt Nam
+        if (cleanedNumber.startsWith("84") && cleanedNumber.length() >= 11) {
+            // Đã ở định dạng +84, giữ nguyên
+            return "+" + cleanedNumber;
+        } else if (cleanedNumber.startsWith("0")) {
+            // Bắt đầu bằng 0, chuyển thành +84
+            return "+84" + cleanedNumber.substring(1);
+        } else if (cleanedNumber.length() >= 9 && cleanedNumber.length() <= 10) {
+            // Số 9-10 chữ số, giả định là số Việt Nam, thêm +84
+            return "+84" + cleanedNumber;
+        }
+
+        // Nếu không thuộc các trường hợp trên, trả về nguyên bản
+        return phoneNumber;
+    }
+    private String getContactName(String phoneNumber) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            return phoneNumber;
+        }
+
+        Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNumber));
+        Cursor cursor = getContentResolver().query(uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.PhoneLookup.DISPLAY_NAME));
+                cursor.close();
+                return name;
+            }
+            cursor.close();
+        }
+        return phoneNumber;
     }
 
     // ContentObserver để theo dõi thay đổi trong SMS database

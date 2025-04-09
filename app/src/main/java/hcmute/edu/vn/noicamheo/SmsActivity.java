@@ -236,7 +236,9 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
                 long date = cursor.getLong(dateIndex);
                 int type = cursor.getInt(typeIndex);
 
+                // Chuẩn hóa số điện thoại ngay từ đầu
                 String normalizedAddress = normalizePhoneNumber(address);
+                Log.d("SmsActivity", "Original address: " + address + ", Normalized address: " + normalizedAddress);
                 String senderName = getContactName(normalizedAddress);
 
                 boolean isOutgoing = (type == Telephony.Sms.MESSAGE_TYPE_SENT);
@@ -244,13 +246,7 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
                 String recipientId = isOutgoing ? normalizedAddress : "current_user_id";
 
                 if (isOutgoing) {
-                    String contactName = getContactName(address);
-                    if (!contactName.equals(address)) {
-                        recipientId = address;
-                        senderName = "Me";
-                    }
-                } else {
-                    senderName = senderName.equals(normalizedAddress) ? normalizedAddress : senderName;
+                    senderName = "Me";
                 }
 
                 Message message = new Message(
@@ -262,12 +258,13 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         }
         return messages;
     }
-
     private List<Message> groupMessagesBySender(List<Message> messages) {
         Map<String, Message> latestMessages = new HashMap<>();
 
         for (Message message : messages) {
-            String conversationId = message.isOutgoing() ? message.getRecipientId() : message.getSenderId();
+            // Chuẩn hóa lại conversationId để đảm bảo nhất quán
+            String conversationId = message.isOutgoing() ? normalizePhoneNumber(message.getRecipientId()) : normalizePhoneNumber(message.getSenderId());
+            Log.d("SmsActivity", "Message from: " + message.getSenderId() + ", to: " + message.getRecipientId() + ", conversationId: " + conversationId);
             if (!latestMessages.containsKey(conversationId) ||
                     message.getTimestamp().getTime() > latestMessages.get(conversationId).getTimestamp().getTime()) {
                 String displaySenderId = message.isOutgoing() ? message.getRecipientId() : message.getSenderId();
@@ -286,7 +283,6 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         groupedMessages.sort((m1, m2) -> Long.compare(m2.getTimestamp().getTime(), m1.getTimestamp().getTime()));
         return groupedMessages;
     }
-
     private String getContactName(String phoneNumber) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -310,26 +306,27 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
     private String normalizePhoneNumber(String phoneNumber) {
         if (phoneNumber == null) return null;
 
-        String cleanedNumber = phoneNumber.replaceAll("[\\s-]", "");
-        if (cleanedNumber.length() < 6 || !cleanedNumber.matches("\\d+")) {
+        // Xóa tất cả ký tự không phải số (khoảng trắng, dấu gạch ngang, dấu cộng, v.v.)
+        String cleanedNumber = phoneNumber.replaceAll("[^0-9]", "");
+
+        // Nếu không phải số hoặc quá ngắn, trả về nguyên bản
+        if (cleanedNumber.isEmpty()) {
             return phoneNumber;
         }
 
-        if (cleanedNumber.startsWith("0")) {
+        // Chuẩn hóa số Việt Nam
+        if (cleanedNumber.startsWith("84") && cleanedNumber.length() >= 11) {
+            // Đã ở định dạng +84, giữ nguyên
+            return "+" + cleanedNumber;
+        } else if (cleanedNumber.startsWith("0")) {
+            // Bắt đầu bằng 0, chuyển thành +84
             return "+84" + cleanedNumber.substring(1);
-        } else if (!cleanedNumber.startsWith("+84")) {
+        } else if (cleanedNumber.length() >= 9 && cleanedNumber.length() <= 10) {
+            // Số 9-10 chữ số, giả định là số Việt Nam, thêm +84
             return "+84" + cleanedNumber;
         }
 
-        String contactName = getContactName(phoneNumber);
-        if (contactName.equals(phoneNumber)) {
-            if (cleanedNumber.startsWith("0")) {
-                return "+84" + cleanedNumber.substring(1);
-            } else if (!cleanedNumber.startsWith("+84")) {
-                return "+84" + cleanedNumber;
-            }
-            return cleanedNumber;
-        }
+        // Nếu không thuộc các trường hợp trên, trả về nguyên bản
         return phoneNumber;
     }
 
