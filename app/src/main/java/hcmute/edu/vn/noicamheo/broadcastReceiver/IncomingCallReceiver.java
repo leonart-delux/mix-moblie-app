@@ -15,6 +15,7 @@ import hcmute.edu.vn.noicamheo.R;
 
 public class IncomingCallReceiver extends BroadcastReceiver {
     private boolean hasNotified;
+    private String incomingNumber;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -22,6 +23,7 @@ public class IncomingCallReceiver extends BroadcastReceiver {
         if (telephonyManager == null) { return; }
 
         String stateStr = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
+        incomingNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER);
 
         if (TelephonyManager.EXTRA_STATE_RINGING.equals(stateStr) && !hasNotified) {
             hasNotified = true;
@@ -39,7 +41,7 @@ public class IncomingCallReceiver extends BroadcastReceiver {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
                 .setSmallIcon(R.drawable.ic_baseline_call_received_24)
                 .setContentTitle("Incoming Call")
-                .setContentText("You have an incoming call!")
+                .setContentText(incomingNumber + " is calling...")
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_CALL)
                 .setAutoCancel(true)
