@@ -7,13 +7,22 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+
 import androidx.core.app.NotificationCompat;
 
 import hcmute.edu.vn.noicamheo.AlarmActivity;
 import hcmute.edu.vn.noicamheo.R;
+import hcmute.edu.vn.noicamheo.ScheduleActivity;
 
 public class AlarmBroadcastReceiver extends BroadcastReceiver {
+    private Ringtone ringtone; // Đặt biến này trong class nếu cần dừng sau
+
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -26,13 +35,12 @@ public class AlarmBroadcastReceiver extends BroadcastReceiver {
         alarmIntent.putExtra("title", title);
         alarmIntent.putExtra("description", description);
         alarmIntent.putExtra("time", time);
-        alarmIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Mở ứng dụng trong một task mới
+        alarmIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-        // Tạo PendingIntent để mở ứng dụng khi bấm vào thông báo
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // Tạo Notification
+        // Tạo Notification (không dùng setDefaults nữa)
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, "task_notification_channel")
                 .setSmallIcon(R.drawable.ic_alarm) // Biểu tượng của thông báo
                 .setContentTitle(title)
@@ -43,13 +51,13 @@ public class AlarmBroadcastReceiver extends BroadcastReceiver {
                 .setAutoCancel(true) // Tự động hủy khi người dùng nhấn vào
                 .setCategory(NotificationCompat.CATEGORY_ALARM); // Đảm bảo thông báo có dạng cảnh báo
 
-        // Hiển thị thông báo
+
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager == null) {
-            return; // Nếu NotificationManager không khả dụng, không cần làm gì
+            return;
         }
 
-        // Với Android 8.0 trở lên, cần tạo channel thông báo
+        // Tạo channel cho Android 8+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             int importance = NotificationManager.IMPORTANCE_HIGH;
             NotificationChannel channel = new NotificationChannel("task_notification_channel", "Task Notifications", importance);
@@ -57,7 +65,13 @@ public class AlarmBroadcastReceiver extends BroadcastReceiver {
             notificationManager.createNotificationChannel(channel);
         }
 
-        // ID của notification có thể là `time` hoặc `taskId`, đảm bảo mỗi thông báo có ID duy nhất
+        // Hiển thị thông báo
         notificationManager.notify((int) (time % Integer.MAX_VALUE), notificationBuilder.build());
+
+
     }
+
+
+
+
 }

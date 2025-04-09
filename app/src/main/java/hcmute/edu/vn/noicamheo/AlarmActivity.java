@@ -49,35 +49,19 @@ public class AlarmActivity extends AppCompatActivity {
         titleText.setText(title);
         descriptionText.setText(description);
 
-        // Phát âm thanh thông báo của hệ thống
-        playSystemRingtone();
-
-        // Đóng Activity và dừng âm thanh khi nhấn nút
+        // Đóng Activity khi nhấn nút
         closeButton.setOnClickListener(v -> {
-            stopSystemRingtone();
             finish();
         });
     }
 
     // Phát âm thanh thông báo mặc định của hệ thống
-    private void playSystemRingtone() {
-        Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE); // Hoặc TYPE_RINGTONE, TYPE_NOTIFICATION
-        ringtone = RingtoneManager.getRingtone(getApplicationContext(), notification);
-        if (ringtone != null) {
-            ringtone.play();
-        }
-    }
 
     // Dừng âm thanh khi tắt báo thức
-    private void stopSystemRingtone() {
-        if (ringtone != null && ringtone.isPlaying()) {
-            ringtone.stop();
-        }
-    }
+
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stopSystemRingtone(); // Đảm bảo âm thanh dừng khi Activity bị hủy
     }
 }

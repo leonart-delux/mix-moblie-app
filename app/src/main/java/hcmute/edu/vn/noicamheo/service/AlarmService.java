@@ -13,7 +13,11 @@ import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import hcmute.edu.vn.noicamheo.AlarmActivity;
 import hcmute.edu.vn.noicamheo.R;
@@ -54,13 +58,25 @@ public class AlarmService extends Service {
     }
 
     private boolean shouldTriggerNotification(Task task) {
-        // Kiểm tra nếu thời gian hiện tại đã đến giờ thông báo của task
-        long currentTime = System.currentTimeMillis();
-        long taskTime = Long.parseLong(task.getTime()); // Giả sử thời gian lưu dưới dạng long (giây, ms)
+        String taskTimeStr = task.getTime(); // "HH:mm"
+        String taskDateStr = task.getDate(); // "dd/MM/yyyy"
 
-        // Nếu thời gian hiện tại lớn hơn hoặc bằng thời gian task, gửi thông báo
-        return currentTime >= taskTime;
+        try {
+            // Gộp cả ngày và giờ để so sánh
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            Date taskDateTime = sdf.parse(taskDateStr + " " + taskTimeStr);
+
+            long currentTimeMillis = System.currentTimeMillis();
+            long taskTimeMillis = taskDateTime.getTime();
+
+            // Trigger nếu thời gian task <= thời gian hiện tại
+            return currentTimeMillis >= taskTimeMillis;
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
+
 
     @Override
     public IBinder onBind(Intent intent) {
