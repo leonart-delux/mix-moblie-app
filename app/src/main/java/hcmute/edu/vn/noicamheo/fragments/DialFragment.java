@@ -1,5 +1,7 @@
 package hcmute.edu.vn.noicamheo.fragments;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -52,8 +54,20 @@ public class DialFragment extends Fragment {
         textViewSharp.setOnClickListener(this::clickKeypadEvent);
         textViewStar.setOnClickListener(this::clickKeypadEvent);
         imageButtonDelete.setOnClickListener(this::clickKeypadEvent);
+        imageButtonDelete.setOnLongClickListener(this::holdDeleteButton);
+
+        imageButtonCall.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            intent.setData(Uri.parse("tel:" + textViewInput.getText()));
+            startActivity(intent);
+        });
 
         return view;
+    }
+
+    private boolean holdDeleteButton(View view) {
+        textViewInput.setText("");
+        return true;
     }
 
     private void clickKeypadEvent(View view) {

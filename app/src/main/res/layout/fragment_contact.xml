@@ -6,7 +6,7 @@
     tools:context=".fragments.ContactFragment"
     android:background="@color/white">
 
-    <SearchView
+    <androidx.appcompat.widget.SearchView
         android:id="@+id/searchViewContact"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
