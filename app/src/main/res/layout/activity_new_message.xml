@@ -29,15 +29,18 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/recipientPhoneLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Recipient's Phone Number"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-            <com.google.android.material.textfield.TextInputEditText
+            <androidx.appcompat.widget.AppCompatAutoCompleteTextView
                 android:id="@+id/recipientPhoneEdit"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:padding="10dp"
+
                 android:inputType="phone"/>
 
         </com.google.android.material.textfield.TextInputLayout>

@@ -1,4 +1,4 @@
-package hcmute.edu.vn.noicamheo.models;
+package hcmute.edu.vn.noicamheo.entity;
 
 import java.util.Date;
 
@@ -15,8 +15,8 @@ public class Message {
         // Required empty constructor
     }
 
-    public Message(String id, String senderId, String senderName, String recipientId, 
-                  String content, Date timestamp, boolean isOutgoing) {
+    public Message(String id, String senderId, String senderName, String recipientId,
+                   String content, Date timestamp, boolean isOutgoing) {
         this.id = id;
         this.senderId = senderId;
         this.senderName = senderName;
@@ -26,7 +26,6 @@ public class Message {
         this.isOutgoing = isOutgoing;
     }
 
-    // Getters and Setters
     public String getId() {
         return id;
     }

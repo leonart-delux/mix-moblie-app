@@ -1,4 +1,4 @@
-package hcmute.edu.vn.noicamheo.adapters;
+package hcmute.edu.vn.noicamheo.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,12 +14,13 @@ import java.util.List;
 import java.util.Locale;
 
 import hcmute.edu.vn.noicamheo.R;
-import hcmute.edu.vn.noicamheo.models.Message;
+import hcmute.edu.vn.noicamheo.entity.Message;
 
 public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageViewHolder> {
     private List<Message> messages;
     private final OnMessageClickListener listener;
     private final SimpleDateFormat timeFormat;
+    private final SimpleDateFormat dateTimeFormat;
 
     public interface OnMessageClickListener {
         void onMessageClick(Message message);
@@ -29,6 +30,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         this.messages = new ArrayList<>();
         this.listener = listener;
         this.timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());
+        this.dateTimeFormat = new SimpleDateFormat("dd/MM/yyyy h:mm a", Locale.getDefault());
     }
 
     @NonNull
@@ -60,6 +62,18 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         notifyItemInserted(0);
     }
 
+    public void addMessages(List<Message> newMessages) {
+        int startPosition = messages.size();
+        messages.addAll(newMessages);
+        notifyItemRangeInserted(startPosition, newMessages.size());
+    }
+
+    public void clearMessages() {
+        int size = messages.size();
+        messages.clear();
+        notifyItemRangeRemoved(0, size);
+    }
+
     class MessageViewHolder extends RecyclerView.ViewHolder {
         private final TextView senderNameText;
         private final TextView messagePreviewText;
@@ -82,7 +96,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         void bind(Message message) {
             senderNameText.setText(message.getSenderName());
             messagePreviewText.setText(message.getContent());
-            messageTimeText.setText(timeFormat.format(message.getTimestamp()));
+            messageTimeText.setText(dateTimeFormat.format(message.getTimestamp()));
         }
     }
 }

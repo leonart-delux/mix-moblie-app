@@ -1,4 +1,4 @@
-package hcmute.edu.vn.noicamheo.adapters;
+package hcmute.edu.vn.noicamheo.adapter;
 
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Locale;
 
 import hcmute.edu.vn.noicamheo.R;
-import hcmute.edu.vn.noicamheo.models.Message;
+import hcmute.edu.vn.noicamheo.entity.Message;
 
 public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.ChatMessageViewHolder> {
     private List<Message> messages;
