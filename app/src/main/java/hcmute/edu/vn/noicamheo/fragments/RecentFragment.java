@@ -1,13 +1,9 @@
 package hcmute.edu.vn.noicamheo.fragments;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
 
 import androidx.appcompat.widget.SearchView;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,16 +14,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
 
 import hcmute.edu.vn.noicamheo.R;
 import hcmute.edu.vn.noicamheo.adapter.RecentAdapter;
-import hcmute.edu.vn.noicamheo.entity.Contact;
 import hcmute.edu.vn.noicamheo.entity.ERecentCallType;
 import hcmute.edu.vn.noicamheo.entity.Recent;
 
@@ -35,7 +28,6 @@ public class RecentFragment extends Fragment {
     RecyclerView recyclerViewRecent;
     SearchView searchView;
     RecentAdapter recentAdapter;
-    private static final int REQUEST_CODE_CONTACT = 102;        // Code to request permission
     private List<Object> recents = new ArrayList<>();
 
     @Override
@@ -47,12 +39,6 @@ public class RecentFragment extends Fragment {
         // Load component on UI
         recyclerViewRecent = view.findViewById(R.id.recyclerViewRecentHolder);
         searchView = view.findViewById(R.id.searchViewRecent);
-
-        // Check for permission
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_CALL_LOG)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.READ_CALL_LOG}, REQUEST_CODE_CONTACT);
-        }
 
         // Load data
         recents = loadCallHistory();
