@@ -33,7 +33,7 @@
         android:layout_below="@id/textViewFullName"
         android:layout_toEndOf="@id/imageViewAvatar"
         android:layout_marginBottom="15dp"
-        android:visibility="gone">
+        android:visibility="">
 
         <TextView
             android:id="@+id/textViewPhone"
@@ -49,23 +49,10 @@
             android:id="@+id/imageViewCall"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:layout_below="@id/textViewPhone"
+            android:layout_alignParentEnd="true"
             android:background="@drawable/bg_contact_circle_button"
-            android:layout_marginTop="15dp"
             android:padding="6dp"
             android:src="@drawable/ic_baseline_call_24" />
-
-        <ImageView
-            android:id="@+id/imageViewMessage"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_below="@id/textViewPhone"
-            android:layout_toEndOf="@id/imageViewCall"
-            android:background="@drawable/bg_contact_circle_button"
-            android:layout_marginTop="15dp"
-            android:layout_marginStart="20dp"
-            android:padding="6dp"
-            android:src="@drawable/ic_baseline_chat_24" />
     </RelativeLayout>
 
     <LinearLayout
