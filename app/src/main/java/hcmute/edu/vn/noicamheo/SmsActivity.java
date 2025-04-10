@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -38,6 +39,7 @@ import java.util.concurrent.Executors;
 
 import hcmute.edu.vn.noicamheo.adapter.MessageAdapter;
 import hcmute.edu.vn.noicamheo.entity.Message;
+import hcmute.edu.vn.noicamheo.service.SmsBackgroundService;
 
 public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnMessageClickListener {
     private MessageAdapter adapter;
@@ -55,7 +57,12 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sms);
-
+        Intent serviceIntent = new Intent(this, SmsBackgroundService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startService(serviceIntent);
+        } else {
+            startService(serviceIntent);
+        }
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -91,17 +98,16 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
                     Log.d(TAG, "newMessageLauncher callback triggered with result code: " + result.getResultCode());
                     if (result.getResultCode() == RESULT_OK) {
                         Log.i(TAG, "Result OK received, refreshing messages");
-                        refreshMessages(); // Làm mới danh sách sau khi gửi tin nhắn
+                        refreshMessages();
                     } else {
                         Log.w(TAG, "Result not OK, code: " + result.getResultCode());
                     }
                 });
 
-        // Thêm log vào sự kiện nhấn nút FAB
         newMessageFab.setOnClickListener(v -> {
             Log.d(TAG, "FAB clicked, launching NewMessageActivity");
             Intent intent = new Intent(this, NewMessageActivity.class);
-            newMessageLauncher.launch(intent); // Mở NewMessageActivity
+            newMessageLauncher.launch(intent);
         });
     }
 
@@ -116,15 +122,32 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
     }
 
     private void requestPermissions() {
+        List<String> requiredPermissions = new ArrayList<>();
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requiredPermissions.add(Manifest.permission.READ_SMS);
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requiredPermissions.add(Manifest.permission.READ_CONTACTS);
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requiredPermissions.add(Manifest.permission.RECEIVE_SMS);
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                         != PackageManager.PERMISSION_GRANTED) {
+            requiredPermissions.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+
+        if (!requiredPermissions.isEmpty()) {
             ActivityCompat.requestPermissions(this,
-                    new String[]{
-                            Manifest.permission.READ_SMS,
-                            Manifest.permission.READ_CONTACTS
-                    },
+                    requiredPermissions.toArray(new String[0]),
                     SMS_AND_CONTACTS_PERMISSION_REQUEST_CODE);
         } else {
             loadMoreMessages();
@@ -196,11 +219,7 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         String[] selectionArgs = new String[]{String.valueOf(maxDate)};
 
         Cursor cursor = getContentResolver().query(
-                uri,
-                null,
-                selection,
-                selectionArgs,
-                "date DESC LIMIT " + PAGE_SIZE
+                uri, null, selection, selectionArgs, "date DESC LIMIT " + PAGE_SIZE
         );
 
         if (cursor != null) {
@@ -217,33 +236,21 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
                 long date = cursor.getLong(dateIndex);
                 int type = cursor.getInt(typeIndex);
 
-                // Chuẩn hóa số chỉ khi không có tên trong danh bạ
+                // Chuẩn hóa số điện thoại ngay từ đầu
                 String normalizedAddress = normalizePhoneNumber(address);
-                String senderName = getContactName(normalizedAddress); // Lấy tên từ số đã chuẩn hóa nếu cần
+                Log.d("SmsActivity", "Original address: " + address + ", Normalized address: " + normalizedAddress);
+                String senderName = getContactName(normalizedAddress);
 
                 boolean isOutgoing = (type == Telephony.Sms.MESSAGE_TYPE_SENT);
                 String senderId = isOutgoing ? "current_user_id" : normalizedAddress;
                 String recipientId = isOutgoing ? normalizedAddress : "current_user_id";
 
-                // Nếu là tin nhắn gửi đi và có tên trong danh bạ, giữ nguyên số gốc cho recipientId
                 if (isOutgoing) {
-                    String contactName = getContactName(address);
-                    if (!contactName.equals(address)) {
-                        recipientId = address; // Giữ số gốc nếu có tên
-                        senderName = "Me";
-                    }
-                } else {
-                    senderName = senderName.equals(normalizedAddress) ? normalizedAddress : senderName;
+                    senderName = "Me";
                 }
 
                 Message message = new Message(
-                        id,
-                        senderId,
-                        senderName,
-                        recipientId,
-                        body,
-                        new Date(date),
-                        isOutgoing
+                        id, senderId, senderName, recipientId, body, new Date(date), isOutgoing
                 );
                 messages.add(message);
             }
@@ -251,12 +258,13 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         }
         return messages;
     }
-
     private List<Message> groupMessagesBySender(List<Message> messages) {
         Map<String, Message> latestMessages = new HashMap<>();
 
         for (Message message : messages) {
-            String conversationId = message.isOutgoing() ? message.getRecipientId() : message.getSenderId();
+            // Chuẩn hóa lại conversationId để đảm bảo nhất quán
+            String conversationId = message.isOutgoing() ? normalizePhoneNumber(message.getRecipientId()) : normalizePhoneNumber(message.getSenderId());
+            Log.d("SmsActivity", "Message from: " + message.getSenderId() + ", to: " + message.getRecipientId() + ", conversationId: " + conversationId);
             if (!latestMessages.containsKey(conversationId) ||
                     message.getTimestamp().getTime() > latestMessages.get(conversationId).getTimestamp().getTime()) {
                 String displaySenderId = message.isOutgoing() ? message.getRecipientId() : message.getSenderId();
@@ -264,13 +272,8 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
                 String displayContent = message.isOutgoing() ? "me: " + message.getContent() : message.getContent();
 
                 Message updatedMessage = new Message(
-                        message.getId(),
-                        displaySenderId,
-                        displaySenderName,
-                        message.getRecipientId(),
-                        displayContent,
-                        message.getTimestamp(),
-                        message.isOutgoing()
+                        message.getId(), displaySenderId, displaySenderName, message.getRecipientId(),
+                        displayContent, message.getTimestamp(), message.isOutgoing()
                 );
                 latestMessages.put(conversationId, updatedMessage);
             }
@@ -280,7 +283,6 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         groupedMessages.sort((m1, m2) -> Long.compare(m2.getTimestamp().getTime(), m1.getTimestamp().getTime()));
         return groupedMessages;
     }
-
     private String getContactName(String phoneNumber) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -300,37 +302,31 @@ public class SmsActivity extends AppCompatActivity implements MessageAdapter.OnM
         }
         return phoneNumber;
     }
+
     private String normalizePhoneNumber(String phoneNumber) {
         if (phoneNumber == null) return null;
 
-        // Loại bỏ ký tự không cần thiết
-        String cleanedNumber = phoneNumber.replaceAll("[\\s-]", "");
+        // Xóa tất cả ký tự không phải số (khoảng trắng, dấu gạch ngang, dấu cộng, v.v.)
+        String cleanedNumber = phoneNumber.replaceAll("[^0-9]", "");
 
-        // Kiểm tra xem có phải số ngắn hoặc tên nhà mạng không
-        if (cleanedNumber.length() < 6 || !cleanedNumber.matches("\\d+")) {
-            // Số ngắn (như 191) hoặc tên (như VIETTEL) -> giữ nguyên
+        // Nếu không phải số hoặc quá ngắn, trả về nguyên bản
+        if (cleanedNumber.isEmpty()) {
             return phoneNumber;
         }
 
-        // Chuẩn hóa và hiện tại chỉ chuẩn hóa cho nội địa VN
-            if (cleanedNumber.startsWith("0")) {
-                return "+84" + cleanedNumber.substring(1);
-            } else if (!cleanedNumber.startsWith("+84")) {
-                return "+84" + cleanedNumber;
-            }
-
-        // Kiểm tra danh bạ
-        String contactName = getContactName(phoneNumber);
-        if (contactName.equals(phoneNumber)) {
-            // Không có tên trong danh bạ -> chuẩn hóa
-            if (cleanedNumber.startsWith("0")) {
-                return "+84" + cleanedNumber.substring(1);
-            } else if (!cleanedNumber.startsWith("+84")) {
-                return "+84" + cleanedNumber;
-            }
-            return cleanedNumber;
+        // Chuẩn hóa số Việt Nam
+        if (cleanedNumber.startsWith("84") && cleanedNumber.length() >= 11) {
+            // Đã ở định dạng +84, giữ nguyên
+            return "+" + cleanedNumber;
+        } else if (cleanedNumber.startsWith("0")) {
+            // Bắt đầu bằng 0, chuyển thành +84
+            return "+84" + cleanedNumber.substring(1);
+        } else if (cleanedNumber.length() >= 9 && cleanedNumber.length() <= 10) {
+            // Số 9-10 chữ số, giả định là số Việt Nam, thêm +84
+            return "+84" + cleanedNumber;
         }
-        // Có tên trong danh bạ -> giữ nguyên
+
+        // Nếu không thuộc các trường hợp trên, trả về nguyên bản
         return phoneNumber;
     }
 

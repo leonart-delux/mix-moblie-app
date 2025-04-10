@@ -82,7 +82,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             if (message.isOutgoing()) {
                 params.gravity = Gravity.END;
                 messageCard.setCardBackgroundColor(itemView.getContext().getResources()
-                        .getColor(android.R.color.holo_blue_light));
+                        .getColor(android.R.color.holo_blue_bright));
                 messageText.setTextColor(itemView.getContext().getResources()
                         .getColor(android.R.color.white));
                 params.setMargins(64, 4, 8, 4); // left, top, right, bottom
