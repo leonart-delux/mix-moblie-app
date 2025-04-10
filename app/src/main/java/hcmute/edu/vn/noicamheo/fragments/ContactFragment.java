@@ -1,13 +1,9 @@
 package hcmute.edu.vn.noicamheo.fragments;
 
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.Manifest;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SearchView;
-import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,8 +26,7 @@ public class ContactFragment extends Fragment {
     RecyclerView recyclerViewContact;
     SearchView searchView;
     ContactAdapter contactAdapter;
-    private static final int REQUEST_CODE_CONTACT = 101;      // Code to request permission
-    private List<Object> contacts = new ArrayList<>();
+    private final List<Object> contacts = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -42,11 +37,6 @@ public class ContactFragment extends Fragment {
         // Load components on UI
         recyclerViewContact = view.findViewById(R.id.recyclerViewContactHolder);
         searchView = view.findViewById(R.id.searchViewContact);
-
-        // Check for permission
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.READ_CONTACTS}, REQUEST_CODE_CONTACT);
-        }
 
         // First load data
         contacts.addAll(loadContacts());
@@ -148,19 +138,6 @@ public class ContactFragment extends Fragment {
                 iterator.previous();
                 iterator.add(lastChar.toString().toUpperCase());
                 iterator.next();
-            }
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == REQUEST_CODE_CONTACT) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted
-            } else {
-                Toast.makeText(getContext(), "Permission Denied", Toast.LENGTH_SHORT).show();
             }
         }
     }

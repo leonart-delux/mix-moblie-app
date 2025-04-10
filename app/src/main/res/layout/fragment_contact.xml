@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".fragments.ContactFragment"
     android:background="@color/white">
 
@@ -15,9 +16,9 @@
         android:layout_marginHorizontal="20dp"
         android:layout_marginTop="12dp"
         android:layout_marginBottom="10dp"
-        android:queryHint="..."
+        android:queryHint="Search"
         android:background="@drawable/bg_contact_search_view"
-        android:iconifiedByDefault="false"/>
+        app:iconifiedByDefault="false"/>
 
 
     <androidx.recyclerview.widget.RecyclerView
