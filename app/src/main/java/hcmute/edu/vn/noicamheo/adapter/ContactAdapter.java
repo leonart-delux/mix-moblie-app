@@ -127,7 +127,6 @@ public class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         RelativeLayout openPanel;
         TextView textViewPhone;
         ImageView imageViewCall;
-        ImageView imageViewMessage;
         LinearLayout divider;
         RelativeLayout.LayoutParams params;
 
@@ -139,7 +138,6 @@ public class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             openPanel = itemView.findViewById(R.id.relativeLayoutOpeningPanel);
             textViewPhone = itemView.findViewById(R.id.textViewPhone);
             imageViewCall = itemView.findViewById(R.id.imageViewCall);
-            imageViewMessage = itemView.findViewById(R.id.imageViewMessage);
             divider = itemView.findViewById(R.id.contactItemDivider);
             params = (RelativeLayout.LayoutParams) divider.getLayoutParams();
         }
