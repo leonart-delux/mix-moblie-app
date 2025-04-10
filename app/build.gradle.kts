@@ -32,12 +32,20 @@ android {
 }
 
 dependencies {
-
+    implementation ("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+    implementation ("androidx.recyclerview:recyclerview:1.1.0")
+    implementation("com.applandeo:material-calendar-view:1.9.2")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    implementation("androidx.media3:media3-session:1.5.1")
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-ui:1.5.1")
+    implementation("androidx.media3:media3-common:1.5.1")
+    implementation("androidx.core:core:1.12.0")
+    implementation("androidx.media:media:1.7.0")
 }

@@ -7,9 +7,58 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/misc.xml
 .DS_Store
 /build
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+
+# Ignore Android Studio specific files
+.idea/
+*.iml
+.gradle/
+/local.properties
+/.cxx/
+/.externalNativeBuild/
+
+# Ignore build and output directories
+/build/
+/app/build/
+/captures/
+
+# Ignore generated files
+/gen/
+/out/
+
+# Ignore dependency directories
+/.maven/
+/.gradle/
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+*.swp
+
+# Ignore Keystore files (security risk)
+*.keystore
+*.jks
+
+# Ignore APKs and other generated binaries
+*.apk
+*.ap_ 
+*.dex
+*.class
+*.so
+*.jar
+*.aar
+
+# Ignore test and profiling files
+/lint/reports/
+/test-results/
+/coverage/
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:background="@drawable/bg_media"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/notification_album_art"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center_vertical"
+        android:src="@drawable/ic_cd"
+        android:contentDescription="Album Art" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="8dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/notification_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333"
+            android:text="Song Title" />
+
+        <TextView
+            android:id="@+id/notification_artist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textSize="12sp"
+            android:textColor="#666"
+            android:text="Artist Name" />
+
+        <ProgressBar
+            android:id="@+id/notification_progress"
+            android:layout_width="match_parent"
+            android:layout_height="3dp"
+            android:layout_marginTop="4dp"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:max="100"
+            android:progressTint="#333" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/notification_previous"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_vertical"
+        android:background="@null"
+        android:src="@drawable/ic_previous"
+        android:contentDescription="Previous" />
+
+    <ImageButton
+        android:id="@+id/notification_play_pause"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginHorizontal="4dp"
+        android:background="@null"
+        android:src="@drawable/ic_play"
+        android:contentDescription="Play/Pause" />
+
+    <ImageButton
+        android:id="@+id/notification_next"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_vertical"
+        android:background="@null"
+        android:src="@drawable/ic_next"
+        android:contentDescription="Next" />
+</LinearLayout>
